@@ -1,6 +1,8 @@
 # Branching Strategies and Commit Naming
 ## Branching Strategy
 
+EVERYTHING MADE SHOULD CREATE A PULL REQUEST
+
 To keep the project organized and collaboration smooth, we follow a simple branching workflow:
 
 ### 1. Main Branches

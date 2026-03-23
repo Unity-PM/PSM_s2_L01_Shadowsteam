@@ -75,3 +75,7 @@ type(scope): short summary
 - Branches keep work isolated and organized  
 - Commit messages follow a clear, consistent style  
 - Use pull requests for reviews before merging  
+
+
+### Class UML
+<img width="1512" height="497" alt="Screenshot 2026-03-23 at 11 08 48" src="https://github.com/user-attachments/assets/65401dcf-3b8d-4965-ad01-886b2bda49dc" />

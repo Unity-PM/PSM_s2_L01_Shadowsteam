@@ -1,4 +1,0 @@
-repository "Shadowsteam_Mykyta/Shadowsteam_Mykyta@7971757677611@cloud"
-  path "/"
-    br "/main"
-    co "/main"

@@ -15,6 +15,6 @@ MonoBehaviour:
   skillId: Fireball
   manaCost: 5
   cooldown: 2
-  fireball: {fileID: 1344704843002356261, guid: df96e55917a66c64fb710ee2b03d5852, type: 3}
+  fireball: {fileID: 7205872552607845878, guid: 08eea962f9e866f4190f780b77a8193a, type: 3}
   damage: 11
   speed: 5

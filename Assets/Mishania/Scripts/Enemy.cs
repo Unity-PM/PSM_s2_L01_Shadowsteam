@@ -8,7 +8,7 @@ namespace Platformer {
     public class Enemy : Entity {
         [SerializeField] NavMeshAgent agent;
         [SerializeField] PlayerDetector playerDetector;
-        [SerializeField] Animator animator;
+        [SerializeField] UniversalClipAnimator clipAnimator;
         
         [SerializeField] float wanderRadius = 10f;
         [SerializeField] float timeBetweenAttacks = 1f;
@@ -20,7 +20,8 @@ namespace Platformer {
         void Awake() {
             if (agent == null) agent = GetComponent<NavMeshAgent>();
             if (playerDetector == null) playerDetector = GetComponent<PlayerDetector>();
-            if (animator == null) animator = GetComponentInChildren<Animator>();
+            if (clipAnimator == null)
+                clipAnimator = GetComponent<UniversalClipAnimator>() ?? GetComponentInChildren<UniversalClipAnimator>();
         }
 
         void Start() {
@@ -28,9 +29,9 @@ namespace Platformer {
             
             stateMachine = new StateMachine();
             
-            var wanderState = new EnemyWanderState(this, animator, agent, wanderRadius);
-            var chaseState = new EnemyChaseState(this, animator, agent, playerDetector.Player);
-            var attackState = new EnemyAttackState(this, animator, agent, playerDetector.Player);
+            var wanderState = new EnemyWanderState(this, clipAnimator, agent, wanderRadius);
+            var chaseState = new EnemyChaseState(this, clipAnimator, agent, playerDetector.Player);
+            var attackState = new EnemyAttackState(this, clipAnimator, agent, playerDetector.Player);
             
             At(wanderState, chaseState, new FuncPredicate(() => playerDetector.CanDetectPlayer()));
             At(chaseState, wanderState, new FuncPredicate(() => !playerDetector.CanDetectPlayer()));

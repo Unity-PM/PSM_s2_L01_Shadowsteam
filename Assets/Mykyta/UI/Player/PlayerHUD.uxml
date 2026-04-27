@@ -1,0 +1,27 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+  <Style src="PlayerHUD.uss" />
+  <ui:VisualElement name="hud-root" class="hud">
+
+    <ui:VisualElement class="stat-row">
+      <ui:Label         name="hp-label"      class="stat-label" />
+      <ui:VisualElement name="hp-bar-bg"   class="bar-bg">
+        <ui:VisualElement name="hp-bar-fill" class="bar-fill hp" />
+      </ui:VisualElement>
+    </ui:VisualElement>
+
+    <ui:VisualElement class="stat-row">
+      <ui:Label         name="mp-label"      class="stat-label" />
+      <ui:VisualElement name="mp-bar-bg"   class="bar-bg">
+        <ui:VisualElement name="mp-bar-fill" class="bar-fill mp" />
+      </ui:VisualElement>
+    </ui:VisualElement>
+
+    <ui:VisualElement class="stat-row">
+      <ui:Label         name="st-label"      class="stat-label" />
+      <ui:VisualElement name="st-bar-bg"   class="bar-bg">
+        <ui:VisualElement name="st-bar-fill" class="bar-fill stamina" />
+      </ui:VisualElement>
+    </ui:VisualElement>
+
+  </ui:VisualElement>
+</ui:UXML>

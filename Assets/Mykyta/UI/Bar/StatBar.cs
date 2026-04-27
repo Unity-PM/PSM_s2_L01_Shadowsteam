@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using UnityEngine.UIElements;
 
-public class StatBar : VisualElement
+[UIWidget("stat-bar")]
+public class StatBar : VisualElement, IConfigurable
 {
     // ── UxmlFactory lets Unity see this in UXML and the UI Builder ──
     [System.Obsolete]
@@ -65,5 +66,11 @@ public class StatBar : VisualElement
         bg.Add(_fill);
         Add(_label);
         Add(bg);
+    }
+
+    public void Configure(WidgetConfig cfg)
+    {
+        Label = cfg.value;   // e.g. "HP"
+        FillColor = cfg.color;   // e.g. red
     }
 }

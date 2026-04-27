@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class PlayerHUD : MonoBehaviour
 {
+    [SerializeField] private PanelDefinitionSO _panelDef;
     [SerializeField] private StatComponent _player;
 
     private StatBar _hpBar, _mpBar, _stBar;
@@ -11,15 +12,15 @@ public class PlayerHUD : MonoBehaviour
     {
         var root = GetComponent<UIDocument>().rootVisualElement;
 
-        _hpBar = root.Q<StatBar>("_hpBar");
-        _mpBar = root.Q<StatBar>("_mpBar");
-        _stBar = root.Q<StatBar>("_stBar");
+        // one line builds the entire panel from the SO
+        var panel = UIFactory.Build(_panelDef, root);
+
+        _hpBar = panel.Q<StatBar>("_hpBar");
+        _mpBar = panel.Q<StatBar>("_mpBar");
+        _stBar = panel.Q<StatBar>("_stBar");
 
         EventBus.Subscribe<StatUpdatedEvent>(OnStatUpdated);
         Refresh();
-
-        Debug.Log($"hp:{_hpBar} mp:{_mpBar} st:{_stBar}");
-        Debug.Log($"hp childCount:{_hpBar?.childCount}");
     }
 
     void OnDisable()

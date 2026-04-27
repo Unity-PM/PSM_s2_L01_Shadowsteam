@@ -13,5 +13,20 @@ MonoBehaviour:
   m_Name: Player_Hud
   m_EditorClassIdentifier: Assembly-CSharp::PanelDefinitionSO
   panelName: player-hud
-  rootUssClass: 
-  widgets: []
+  rootUssClass: hud
+  widgets:
+  - typeId: stat-bar
+    name: _hpBar
+    ussClass: ../Bar/StatBar.uss
+    value: HP
+    color: {r: 0.9098039, g: 0.33333334, b: 0.33333334, a: 1}
+  - typeId: stat-bar
+    name: _mpBar
+    ussClass: ../Bar/StatBar.uss
+    value: MP
+    color: {r: 0.33333334, g: 0.53333336, b: 0.9098039, a: 1}
+  - typeId: stat-bar
+    name: _stBar
+    ussClass: ../Bar/StatBar.uss
+    value: ST
+    color: {r: 0.33333334, g: 0.78431374, b: 0.33333334, a: 1}

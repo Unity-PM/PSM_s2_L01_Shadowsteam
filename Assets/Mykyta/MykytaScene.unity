@@ -914,6 +914,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 781a3c05ef8e7f649a401151c0268c1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHUD
+  _panelDef: {fileID: 11400000, guid: a4c6b96aa95a3bb4a999bbad7fa3fed2, type: 2}
   _player: {fileID: 444918787}
 --- !u!1 &1651173358
 GameObject:

@@ -3,24 +3,28 @@
 namespace Platformer {
     public abstract class EnemyBaseState : IState {
         protected readonly Enemy enemy;
-        protected readonly Animator animator;
-        
-        protected static readonly int IdleHash = Animator.StringToHash("IdleNormal");
-        protected static readonly int RunHash = Animator.StringToHash("RunFWD");
-        protected static readonly int WalkHash = Animator.StringToHash("WalkFWD");
-        protected static readonly int AttackHash = Animator.StringToHash("Attack01");
-        protected static readonly int DieHash = Animator.StringToHash("Die");
-        
-        protected const float crossFadeDuration = 0.1f;
+        protected readonly UniversalClipAnimator clipAnimator;
 
-        protected EnemyBaseState(Enemy enemy, Animator animator) {
+        /// <summary>Ids must match entries on the enemy's UniversalClipAnimator.</summary>
+        protected const string IdleId = "IdleNormal";
+        protected const string WalkId = "WalkFWD";
+        protected const string RunId = "RunFWD";
+        protected const string AttackId = "Attack01";
+        protected const string DieId = "Die";
+
+        protected EnemyBaseState(Enemy enemy, UniversalClipAnimator clipAnimator) {
             this.enemy = enemy;
-            this.animator = animator;
+            this.clipAnimator = clipAnimator;
         }
 
-        protected void SafeCrossFade(int stateHash) {
-            if (animator == null || !animator.isActiveAndEnabled) return;
-            animator.CrossFade(stateHash, crossFadeDuration);
+        protected void SafePlay(string stateId) {
+            if (clipAnimator == null || !clipAnimator.isActiveAndEnabled) return;
+            clipAnimator.Play(stateId);
+        }
+
+        protected void SafeForcePlay(string stateId) {
+            if (clipAnimator == null || !clipAnimator.isActiveAndEnabled) return;
+            clipAnimator.ForcePlay(stateId);
         }
         
         public virtual void OnEnter() {

@@ -6,7 +6,7 @@ namespace Platformer {
         readonly NavMeshAgent agent;
         readonly Transform player;
         
-        public EnemyAttackState(Enemy enemy, Animator animator, NavMeshAgent agent, Transform player) : base(enemy, animator) {
+        public EnemyAttackState(Enemy enemy, UniversalClipAnimator clipAnimator, NavMeshAgent agent, Transform player) : base(enemy, clipAnimator) {
             this.agent = agent;
             this.player = player;
         }
@@ -14,7 +14,7 @@ namespace Platformer {
         public override void OnEnter() {
             Debug.Log("Attack");
             agent.isStopped = true;
-            SafeCrossFade(AttackHash);
+            SafeForcePlay(AttackId);
         }
         
         public override void Update() {

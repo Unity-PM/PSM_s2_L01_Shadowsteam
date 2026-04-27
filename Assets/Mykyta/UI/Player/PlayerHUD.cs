@@ -5,22 +5,21 @@ public class PlayerHUD : MonoBehaviour
 {
     [SerializeField] private StatComponent _player;
 
-    private VisualElement _hpFill, _mpFill, _stFill;
-    private Label _hpLabel, _mpLabel, _stLabel;
+    private StatBar _hpBar, _mpBar, _stBar;
 
     void OnEnable()
     {
         var root = GetComponent<UIDocument>().rootVisualElement;
 
-        _hpFill = root.Q("hp-bar-fill");
-        _mpFill = root.Q("mp-bar-fill");
-        _stFill = root.Q("st-bar-fill");
-        _hpLabel = root.Q<Label>("hp-label");
-        _mpLabel = root.Q<Label>("mp-label");
-        _stLabel = root.Q<Label>("st-label");
+        _hpBar = root.Q<StatBar>("_hpBar");
+        _mpBar = root.Q<StatBar>("_mpBar");
+        _stBar = root.Q<StatBar>("_stBar");
 
         EventBus.Subscribe<StatUpdatedEvent>(OnStatUpdated);
         Refresh();
+
+        Debug.Log($"hp:{_hpBar} mp:{_mpBar} st:{_stBar}");
+        Debug.Log($"hp childCount:{_hpBar?.childCount}");
     }
 
     void OnDisable()
@@ -36,16 +35,8 @@ public class PlayerHUD : MonoBehaviour
 
     private void Refresh()
     {
-        SetBar(_hpFill, _hpLabel, "HP", _player.getHP(), _player.getMaxHP());
-        SetBar(_mpFill, _mpLabel, "MP", _player.getMP(), _player.getMaxMP());
-        SetBar(_stFill, _stLabel, "ST", _player.getStamina(), _player.getMaxStamina());
-    }
-
-    private void SetBar(VisualElement fill, Label label,
-                         string prefix, float cur, float max)
-    {
-        float pct = max > 0 ? cur / max : 0f;
-        fill.style.width = Length.Percent(pct * 100f);
-        label.text = prefix;
+        _hpBar.SetValue(_player.getHP(), _player.getMaxHP());
+        _mpBar.SetValue(_player.getMP(), _player.getMaxMP());
+        _stBar.SetValue(_player.getStamina(), _player.getMaxStamina());
     }
 }

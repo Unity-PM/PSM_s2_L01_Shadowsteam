@@ -42,11 +42,22 @@ public class MovementBrain : MonoBehaviour
 
     private void UpdateActiveModule()
     {
-        if (glideModule != null && glideModule.CanEnter(this)) activeModule = glideModule;
-        else if (jumpModule != null && jumpModule.CanEnter(this)) activeModule = jumpModule;
-        else if (sprintModule != null && sprintModule.CanEnter(this)) activeModule = sprintModule;
-        else if (runModule != null && runModule.CanEnter(this)) activeModule = runModule;
-        else activeModule = idleModule;
+        if (jumpModule != null && jumpModule.CanEnter(this))
+        { jumpModule.Process(this); }
+
+        // 2. ФИКСАЦИЯ СОСТОЯНИЯ В ВОЗДУХЕ
+        if (!controller.isGrounded) {
+            if (glideModule != null && glideModule.CanEnter(this)) { activeModule = glideModule; }
+            return;
+        }
+
+        // 3. ОБЫЧНАЯ ЛОГИКА (только когда на земле)
+        if (sprintModule != null && sprintModule.CanEnter(this))
+        { activeModule = sprintModule; }
+        else if (runModule != null && runModule.CanEnter(this))
+        { activeModule = runModule; }
+        else
+        { activeModule = idleModule; }
     }
 
     private void ApplyGravity()

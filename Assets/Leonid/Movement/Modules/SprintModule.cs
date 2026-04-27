@@ -5,8 +5,12 @@ public class SprintModule : MovementModule
     public override bool CanEnter(MovementBrain brain)
     {
         if (brain.CurrentState == MovementState.Gliding) return false;
-        bool canSustain = brain.Controller.isGrounded || brain.CurrentState == MovementState.Sprinting;
-        return canSustain && brain.Input.IsSprintPressed && brain.Input.MoveVector.magnitude > 0.1f && brain.GetComponent<StatComponent>().getStamina() > 0;
+
+        // если нажата кнопка и есть движение — мы можем спринтить (даже в воздухе)
+        bool hasInput = brain.Input.MoveVector.magnitude > 0.1f;
+        bool hasStamina = brain.GetComponent<StatComponent>().getStamina() > 0;
+
+        return brain.Input.IsSprintPressed && hasInput && hasStamina;
     }
     public override void Process(MovementBrain brain)
     {

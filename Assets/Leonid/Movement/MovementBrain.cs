@@ -1,17 +1,25 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
 public class MovementBrain : MonoBehaviour
 {
     [Header("Modules")]
-    public MovementModule idleModule;
-    public MovementModule runModule;
-    public MovementModule sprintModule;
-    public MovementModule jumpModule;
-    public MovementModule glideModule;
+    [SerializeField]
+    protected MovementModule idleModule;
+    [SerializeField]
+    protected MovementModule runModule;
+    [SerializeField]
+    protected MovementModule sprintModule;
+    [SerializeField]
+    protected MovementModule jumpModule;
+    [SerializeField]
+    protected MovementModule glideModule;
 
     [Header("References")]
+    [SerializeField]
     public MovementSettingsSO settings;
+    [SerializeField]
     public Transform cameraTransform;
 
     private CharacterController controller;

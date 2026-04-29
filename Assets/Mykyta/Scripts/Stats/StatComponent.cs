@@ -5,9 +5,17 @@ public class StatComponent : MonoBehaviour
 {
     public StatSO baseStatsTemplate;
 
+    [SerializeField]
     private float currentHP;
+    [SerializeField]
     private float currentMP;
+    [SerializeField]
     private float currentStamina;
+    [SerializeField]
+    private float staminaRecoveryRate;
+
+    private bool isStaminaExhausted;
+
 
     private Dictionary<StatType, float> modifiers = new Dictionary<StatType, float>();
 
@@ -15,6 +23,7 @@ public class StatComponent : MonoBehaviour
     public float getHP() => currentHP;
     public float getMP() => currentMP;
     public float getStamina() => currentStamina;
+    public bool IsStaminaExhausted => isStaminaExhausted;
 
     public float getMaxHP() => baseStatsTemplate.MaxHP + getModifier(StatType.HP);
     public float getMaxMP() => baseStatsTemplate.MaxMP + getModifier(StatType.MP);
@@ -72,12 +81,10 @@ public class StatComponent : MonoBehaviour
                 break;
 
             case StatType.Stamina:
-                currentStamina = Mathf.Clamp(
-                    currentStamina + e.amount,
-                    0,
-                    getMaxStamina()
-                );
+                currentStamina = Mathf.Clamp(currentStamina + e.amount, 0, getMaxStamina());
+                if (currentStamina <= 0) isStaminaExhausted = true;
                 break;
+
         }
 
         EventBus.Publish(new StatUpdatedEvent(this));
@@ -139,6 +146,11 @@ public class StatComponent : MonoBehaviour
             currentStamina + baseStatsTemplate.StaminaRegen * Time.deltaTime,
             getMaxStamina()
         );
+
+        if (isStaminaExhausted && currentStamina >= getMaxStamina() / staminaRecoveryRate)
+        {
+            isStaminaExhausted = false;
+        }
 
         EventBus.Publish(new StatUpdatedEvent(this));
     }

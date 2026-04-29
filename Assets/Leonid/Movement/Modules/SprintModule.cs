@@ -6,11 +6,11 @@ public class SprintModule : MovementModule
     {
         if (brain.CurrentState == MovementState.Gliding) return false;
 
-        // если нажата кнопка и есть движение — мы можем спринтить (даже в воздухе)
+        var stats = brain.GetComponent<StatComponent>();
         bool hasInput = brain.Input.MoveVector.magnitude > 0.1f;
-        bool hasStamina = brain.GetComponent<StatComponent>().getStamina() > 0;
 
-        return brain.Input.IsSprintPressed && hasInput && hasStamina;
+        // Добавляем проверку на IsStaminaExhausted
+        return brain.Input.IsSprintPressed && hasInput && !stats.IsStaminaExhausted && stats.getStamina() > 0;
     }
     public override void Process(MovementBrain brain)
     {

@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-  <Style src="../Bar/StatBar.uss" />
+  <Style src="StatBar.uss" />
   <Style src="PlayerHUD.uss" />
 
   <ui:VisualElement name="hud-root" class="hud">

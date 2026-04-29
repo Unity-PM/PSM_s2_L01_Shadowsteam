@@ -7,13 +7,12 @@ public class GlideModule : MovementModule
 
     public override bool CanEnter(MovementBrain brain)
     {
-        // 1. Если коснулись земли — глайд выключается
+        var stats = brain.GetComponent<StatComponent>();
         if (brain.Controller.isGrounded) { _isGliding = false; return false; }
 
-        // 2. Если стамина кончилась — падаем
-        if (brain.GetComponent<StatComponent>().getStamina() <= 0) { _isGliding = false; return false; }
+        // Если истощен — глайд принудительно выключается и не включается
+        if (stats.IsStaminaExhausted || stats.getStamina() <= 0) { _isGliding = false; return false; }
 
-        // 3. Переключение режима на пробел (JumpDown)
         if (brain.Input.IsJumpDown) _isGliding = !_isGliding;
 
         return _isGliding;

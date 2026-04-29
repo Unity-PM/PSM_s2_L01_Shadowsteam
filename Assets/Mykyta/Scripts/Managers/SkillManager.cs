@@ -7,76 +7,76 @@ public class SkillManager : MonoBehaviour
     public Transform castPoint;
     public List<AbilitySO> skills;
 
+    private MovementBrain movementBrain;
     private Dictionary<string, AbilitySO> skillMap = new();
     private Dictionary<string, float> cooldownTimers = new();
+    private Dictionary<string, int> comboIndices = new();
+    private Dictionary<string, float> comboResetTimers = new();
 
     private void Awake()
     {
+        movementBrain = GetComponent<MovementBrain>();
         foreach (var skill in skills)
         {
             skillMap[skill.skillId] = skill;
             cooldownTimers[skill.skillId] = 0f;
+            if (skill is ComboAbilitySO) comboIndices[skill.skillId] = 0;
         }
     }
 
     private void Update()
     {
-        List<string> keys = new(cooldownTimers.Keys);
+        UpdateTimers();
+    }
 
+    private void UpdateTimers()
+    {
+        List<string> keys = new(cooldownTimers.Keys);
         foreach (var key in keys)
         {
             if (cooldownTimers[key] > 0)
             {
                 cooldownTimers[key] -= Time.deltaTime;
-                if (cooldownTimers[key] < 0)
-                {
-                    cooldownTimers[key] = 0;
-                    EventBus.Publish(new SkillCooldownEndedEvent(key));
-                }
-
+                if (cooldownTimers[key] <= 0) EventBus.Publish(new SkillCooldownEndedEvent(key));
                 EventBus.Publish(new SkillCooldownEvent(key, cooldownTimers[key]));
             }
-            else
+            if (comboResetTimers.ContainsKey(key) && comboResetTimers[key] > 0)
             {
-                EventBus.Publish(new SkillCooldownEndedEvent(key));
+                comboResetTimers[key] -= Time.deltaTime;
+                if (comboResetTimers[key] <= 0) comboIndices[key] = 0;
             }
         }
     }
 
     public void CastSkill(string skillId)
     {
-        if (!skillMap.ContainsKey(skillId))
-            return;
+        if (!skillMap.TryGetValue(skillId, out AbilitySO skill)) return;
+        if (cooldownTimers[skillId] > 0 || casterStats.getMP() < skill.manaCost) return;
 
-        AbilitySO skill = skillMap[skillId];
+        // Этап 2: Проверка состояния движения
+        if (!skill.allowedStates.Contains(movementBrain.CurrentState)) return;
 
-        if (cooldownTimers[skillId] > 0)
-        {
-            return;
-        }
-
-        if (casterStats.getMP() < skill.manaCost)
-        {
-            return;
-        }
-
-        EventBus.Publish(new StatChangeEvent(
-            casterStats,
-            StatType.MP,
-            -skill.manaCost
-        ));
-
-        skill.Execute(casterStats, castPoint);
+        ExecuteAbilityLogic(skill);
 
         cooldownTimers[skillId] = skill.cooldown;
-
-        EventBus.Publish(new SkillCooldownEvent(skillId, cooldownTimers[skillId]));
+        EventBus.Publish(new StatChangeEvent(casterStats, StatType.MP, -skill.manaCost));
     }
 
-    public float GetCooldownRemaining(string skillId)
+    private void ExecuteAbilityLogic(AbilitySO skill)
     {
-        return cooldownTimers.ContainsKey(skillId)
-            ? cooldownTimers[skillId]
-            : 0f;
+        if (skill is ComboAbilitySO combo)
+        {
+            int index = comboIndices[skill.skillId];
+            combo.comboSteps[index].Execute(casterStats, castPoint);
+
+            comboIndices[skill.skillId] = (index + 1) % combo.comboSteps.Count;
+            comboResetTimers[skill.skillId] = combo.resetTime;
+        }
+        else
+        {
+            skill.Execute(casterStats, castPoint);
+        }
     }
+
+    public float GetCooldownRemaining(string skillId) => cooldownTimers.GetValueOrDefault(skillId, 0f);
 }

@@ -7,9 +7,9 @@ public class MovementStaminaController : MonoBehaviour
     //private StarterAssetsInputs input; инпут метод
     private StatComponent stats;
 
-    [Header("Stamina Settings")]
-    private float staminaDrainPerSecond = 2;
-    private float minStaminaToAction = 2;
+    //[Header("Stamina Settings")]
+    //private float staminaDrainPerSecond = 2;
+    //private float minStaminaToAction = 2;
     private void Awake()
     {
         //input = gameObject.GetComponent<StarterAssetsInputs>(); компонент инпута

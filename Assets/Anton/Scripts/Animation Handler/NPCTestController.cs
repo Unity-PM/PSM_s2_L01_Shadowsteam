@@ -14,7 +14,7 @@ public class NPCTestController : MonoBehaviour
         
     }
 
-    // Update is called once per frame
+    // Update is called once per frame 
     void Update()
     {
         animator.Play("Idle");

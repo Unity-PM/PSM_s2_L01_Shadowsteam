@@ -22,6 +22,8 @@ public class HUDController : MonoBehaviour
     public Image perkTwo;
     [Header("UI Item Bars")]
     public List<Image> items;
+
+    [System.Obsolete]
     private void Awake()
     {
         EventBus.Subscribe<StatUpdatedEvent>(OnStatUpdated);
@@ -34,6 +36,7 @@ public class HUDController : MonoBehaviour
         RefreshStatUI();
     }
 
+    [System.Obsolete]
     private void OnDestroy()
     {
         EventBus.Unsubscribe<StatUpdatedEvent>(OnStatUpdated);
@@ -47,6 +50,7 @@ public class HUDController : MonoBehaviour
         RefreshStatUI();
     }
 
+    [System.Obsolete]
     private void OnSkillCooldownChanged(SkillCooldownEvent e)
     {
         if (e.SkillId == null) return;

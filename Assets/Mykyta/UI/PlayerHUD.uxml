@@ -1,0 +1,20 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+  <Style src="StatBar.uss" />
+  <Style src="PlayerHUD.uss" />
+
+  <ui:VisualElement name="hud-root" class="hud">
+
+    <StatBar name="_hpBar"
+                  label="HP"
+                  fill-color="#E85555" />
+
+    <StatBar name="_mpBar"
+                  label="MP"
+                  fill-color="#5588E8" />
+
+    <StatBar name="_stBar"
+                  label="ST"
+                  fill-color="#55C855" />
+
+  </ui:VisualElement>
+</ui:UXML>

@@ -46,6 +46,12 @@ public class MovementBrain : MonoBehaviour
         UpdateActiveModule();
         if (activeModule != null) activeModule.Process(this);
         if (CurrentState != MovementState.Gliding) ApplyGravity();
+
+        // Управление паузой регена стамины
+        if (TryGetComponent(out StatComponent stats))
+        {
+            stats.StaminaRegenPaused = (CurrentState == MovementState.Sprinting || CurrentState == MovementState.Gliding);
+        }
     }
 
     private void UpdateActiveModule()
@@ -54,8 +60,17 @@ public class MovementBrain : MonoBehaviour
         { jumpModule.Process(this); }
 
         // 2. ФИКСАЦИЯ СОСТОЯНИЯ В ВОЗДУХЕ
-        if (!controller.isGrounded) {
-            if (glideModule != null && glideModule.CanEnter(this)) { activeModule = glideModule; }
+        if (!controller.isGrounded)
+        {
+            // Если можем лететь — летим, иначе сбрасываем в idleModule, чтобы работала гравитация
+            if (glideModule != null && glideModule.CanEnter(this))
+            {
+                activeModule = glideModule;
+            }
+            else
+            {
+                activeModule = idleModule;
+            }
             return;
         }
 

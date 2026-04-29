@@ -17,7 +17,7 @@ MonoBehaviour:
   MaxStamina: 10
   HPRegen: 0.2
   MPRegen: 0.2
-  StaminaRegen: 0.4
+  StaminaRegen: 2
   ATK: 1
   MAG: 1
   DEF: 1

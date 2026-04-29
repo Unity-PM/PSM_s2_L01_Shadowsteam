@@ -4,8 +4,8 @@ using UnityEngine;
 [AttributeUsage(AttributeTargets.Class)]
 public class UIWidgetAttribute : Attribute
 {
-    public string TypeId { get; }
-    public UIWidgetAttribute(string typeId) => TypeId = typeId;
+    public string WidgetTypeId { get; }
+    public UIWidgetAttribute(string typeId) => WidgetTypeId = typeId;
 }
 
 // data Unity serializes per-component in the SO

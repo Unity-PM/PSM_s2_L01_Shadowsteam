@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -17,8 +17,8 @@ public static class ComponentRegistry
                 var attr = type.GetCustomAttribute<UIWidgetAttribute>();
                 if (attr != null)
                 {
-                    _map[attr.TypeId] = type;
-                    Debug.Log($"[Registry] registered: {attr.TypeId} → {type.Name}");
+                    _map[attr.WidgetTypeId] = type;
+                    Debug.Log($"[Registry] registered: {attr.WidgetTypeId} → {type.Name}");
                 }
             }
     }

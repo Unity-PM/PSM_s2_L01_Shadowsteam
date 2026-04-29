@@ -29,11 +29,18 @@ public class StatComponent : MonoBehaviour
     public float getMaxMP() => baseStatsTemplate.MaxMP + getModifier(StatType.MP);
     public float getMaxStamina() => baseStatsTemplate.MaxStamina + getModifier(StatType.Stamina);
 
+    private void EnsureModifiersInitialized()
+    {
+        foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
+        {
+            if (!modifiers.ContainsKey(type))
+                modifiers[type] = 0f;
+        }
+    }
 
     private void Start()
     {
-        foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
-            modifiers[type] = 0f;
+        EnsureModifiersInitialized();
 
         currentHP = getMaxHP();
         currentMP = getMaxMP();
@@ -100,6 +107,7 @@ public class StatComponent : MonoBehaviour
 
     private void ApplyModifier(StatType type, float value)
     {
+        EnsureModifiersInitialized();
         modifiers[type] += value;
 
         switch (type)
@@ -126,7 +134,52 @@ public class StatComponent : MonoBehaviour
 
     private float getModifier(StatType type)
     {
+        EnsureModifiersInitialized();
         return modifiers.ContainsKey(type) ? modifiers[type] : 0f;
+    }
+
+    public PlayerStatsData ExportStatsForSave()
+    {
+        EnsureModifiersInitialized();
+
+        var entries = new List<StatModifierEntry>();
+        foreach (var pair in modifiers)
+        {
+            entries.Add(new StatModifierEntry
+            {
+                statType = pair.Key,
+                value = pair.Value
+            });
+        }
+
+        return new PlayerStatsData
+        {
+            hp = currentHP,
+            mp = currentMP,
+            stamina = currentStamina,
+            statModifiers = entries.ToArray()
+        };
+    }
+
+    public void ApplySaveData(PlayerStatsData data)
+    {
+        EnsureModifiersInitialized();
+
+        foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
+            modifiers[type] = 0f;
+
+        if (data?.statModifiers != null)
+        {
+            foreach (var entry in data.statModifiers)
+                modifiers[entry.statType] = entry.value;
+        }
+
+        currentHP = Mathf.Clamp(data?.hp ?? getMaxHP(), 0, getMaxHP());
+        currentMP = Mathf.Clamp(data?.mp ?? getMaxMP(), 0, getMaxMP());
+        currentStamina = Mathf.Clamp(data?.stamina ?? getMaxStamina(), 0, getMaxStamina());
+        isStaminaExhausted = currentStamina <= 0f;
+
+        EventBus.Publish(new StatUpdatedEvent(this));
     }
 
 

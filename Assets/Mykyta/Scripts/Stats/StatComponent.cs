@@ -11,10 +11,10 @@ public class StatComponent : MonoBehaviour
     private float currentMP;
     [SerializeField]
     private float currentStamina;
-    [SerializeField]
-    private float staminaRecoveryRate;
 
     private bool isStaminaExhausted;
+
+    public bool StaminaRegenPaused { get; set; }
 
 
     private Dictionary<StatType, float> modifiers = new Dictionary<StatType, float>();
@@ -132,24 +132,16 @@ public class StatComponent : MonoBehaviour
 
     private void RegenerateStats()
     {
-        currentHP = Mathf.Min(
-            currentHP + baseStatsTemplate.HPRegen * Time.deltaTime,
-            getMaxHP()
-        );
+        currentHP = Mathf.Min(currentHP + baseStatsTemplate.HPRegen * Time.deltaTime, getMaxHP());
+        currentMP = Mathf.Min(currentMP + baseStatsTemplate.MPRegen * Time.deltaTime, getMaxMP());
 
-        currentMP = Mathf.Min(
-            currentMP + baseStatsTemplate.MPRegen * Time.deltaTime,
-            getMaxMP()
-        );
-
-        currentStamina = Mathf.Min(
-            currentStamina + baseStatsTemplate.StaminaRegen * Time.deltaTime,
-            getMaxStamina()
-        );
-
-        if (isStaminaExhausted && currentStamina >= getMaxStamina() / staminaRecoveryRate)
+        // Регеним стамину только если нет паузы
+        if (!StaminaRegenPaused)
         {
-            isStaminaExhausted = false;
+            currentStamina = Mathf.Min(currentStamina + baseStatsTemplate.StaminaRegen * Time.deltaTime, getMaxStamina());
+
+            // Логика из прошлого шага: если мы восстановили достаточно, снимаем истощение
+            if (isStaminaExhausted && currentStamina >= getMaxStamina() / 6f) isStaminaExhausted = false;
         }
 
         EventBus.Publish(new StatUpdatedEvent(this));

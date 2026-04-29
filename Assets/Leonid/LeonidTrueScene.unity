@@ -763,6 +763,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StatComponent
   baseStatsTemplate: {fileID: 11400000, guid: b371958d59125e6408035be17b15a6ca, type: 2}
+  currentHP: 0
+  currentMP: 0
+  currentStamina: 0
+  staminaRecoveryRate: 1
 --- !u!65 &853619125
 BoxCollider:
   m_ObjectHideFlags: 0

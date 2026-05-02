@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75a08bbf231614244a693b4be11c0d66, type: 3}
+  m_Name: FireBallCombo
+  m_EditorClassIdentifier: Assembly-CSharp::ComboAbilitySO
+  skillId: 1
+  manaCost: 0
+  cooldown: 0
+  allowedStates: 000000000200000003000000
+  steps:
+  - ability: {fileID: 11400000, guid: ce546d470305f9f4983331f2cc17ee4e, type: 2}
+    minDelayBeforeNext: 0.5
+    windowToNext: 4
+  - ability: {fileID: 11400000, guid: 1d52a3d2c0d92a0418fa3ab1d7e96a7d, type: 2}
+    minDelayBeforeNext: 0
+    windowToNext: 0
+  finalCooldown: 2

@@ -8,5 +8,6 @@ public abstract class AbilitySO : ScriptableObject
     public float cooldown;
     public List<MovementState> allowedStates = new List<MovementState> { MovementState.Idle, MovementState.Running, MovementState.Sprinting };
 
-    public abstract void Execute(StatComponent caster, Transform castPoint);
+    public abstract void Execute(StatComponent caster, Transform castPoint, MovementBrain brain);
+
 }

@@ -735,9 +735,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkillManager
   casterStats: {fileID: 853619122}
   castPoint: {fileID: 519340591}
-  skills:
-  - {fileID: 11400000, guid: ce546d470305f9f4983331f2cc17ee4e, type: 2}
-  - {fileID: 11400000, guid: 5d28595dd76c3c549b34b55d01123440, type: 2}
+  combos:
+  - {fileID: 11400000, guid: 43dbcce10cbf5aa49825685d06d7f971, type: 2}
+  - {fileID: 11400000, guid: 63728226e004d22448bdf870b971ac99, type: 2}
 --- !u!114 &853619121
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -766,7 +766,6 @@ MonoBehaviour:
   currentHP: 0
   currentMP: 0
   currentStamina: 0
-  staminaRecoveryRate: 1
 --- !u!65 &853619125
 BoxCollider:
   m_ObjectHideFlags: 0

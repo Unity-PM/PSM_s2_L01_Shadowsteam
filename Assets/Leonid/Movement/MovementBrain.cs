@@ -5,32 +5,31 @@ using UnityEngine;
 public class MovementBrain : MonoBehaviour
 {
     [Header("Modules")]
-    [SerializeField]
-    protected MovementModule idleModule;
-    [SerializeField]
-    protected MovementModule runModule;
-    [SerializeField]
-    protected MovementModule sprintModule;
-    [SerializeField]
-    protected MovementModule jumpModule;
-    [SerializeField]
-    protected MovementModule glideModule;
+    [SerializeField] protected MovementModule idleModule;
+    [SerializeField] protected MovementModule runModule;
+    [SerializeField] protected MovementModule sprintModule;
+    [SerializeField] protected MovementModule jumpModule;
+    [SerializeField] protected MovementModule glideModule;
 
     [Header("References")]
-    [SerializeField]
-    public MovementSettingsSO settings;
-    [SerializeField]
-    public Transform cameraTransform;
+    [SerializeField] public MovementSettingsSO settings;
+    [SerializeField] public Transform cameraTransform;
 
     private CharacterController controller;
     private IMovementInput movementInput;
     private Vector3 verticalVelocity;
     private MovementModule activeModule;
 
+    private float lockTimer = 0f;
+    private Vector3 externalForce;
+    private Vector3 airMomentum;
+
     public CharacterController Controller => controller;
     public IMovementInput Input => movementInput;
     public MovementState CurrentState => activeModule != null ? activeModule.State : MovementState.Idle;
 
+    public void ApplyImpulse(Vector3 force) => externalForce += force;
+    public void LockMovement(float duration) => lockTimer = duration;
     public void SetVerticalVelocity(float val) => verticalVelocity.y = val;
 
     private void Awake()
@@ -43,15 +42,34 @@ public class MovementBrain : MonoBehaviour
 
     private void Update()
     {
+        if (lockTimer > 0) lockTimer -= Time.deltaTime;
+
         UpdateActiveModule();
-        if (activeModule != null) activeModule.Process(this);
+
+        // Логика перемещения с учетом инерции прыжка и блокировки
+        if (controller.isGrounded)
+        {
+            Vector3 posBefore = transform.position;
+            if (activeModule != null && lockTimer <= 0) activeModule.Process(this);
+
+            // Запоминаем вектор горизонтальной скорости для полета
+            Vector3 frameMove = (transform.position - posBefore);
+            frameMove.y = 0;
+            airMomentum = frameMove / Time.deltaTime;
+        }
+        else
+        {
+            // В воздухе: либо глайд, либо сохранение скорости прыжка (airMomentum)
+            if (activeModule == glideModule) activeModule.Process(this);
+            else controller.Move(airMomentum * Time.deltaTime);
+        }
+
         if (CurrentState != MovementState.Gliding) ApplyGravity();
 
-        // Управление паузой регена стамины
+        ApplyExternalForces();
+
         if (TryGetComponent(out StatComponent stats))
-        {
             stats.StaminaRegenPaused = (CurrentState == MovementState.Sprinting || CurrentState == MovementState.Gliding);
-        }
     }
 
     private void UpdateActiveModule()
@@ -59,28 +77,16 @@ public class MovementBrain : MonoBehaviour
         if (jumpModule != null && jumpModule.CanEnter(this))
         { jumpModule.Process(this); }
 
-        // 2. ФИКСАЦИЯ СОСТОЯНИЯ В ВОЗДУХЕ
         if (!controller.isGrounded)
         {
-            // Если можем лететь — летим, иначе сбрасываем в idleModule, чтобы работала гравитация
-            if (glideModule != null && glideModule.CanEnter(this))
-            {
-                activeModule = glideModule;
-            }
-            else
-            {
-                activeModule = idleModule;
-            }
+            if (glideModule != null && glideModule.CanEnter(this)) { activeModule = glideModule; }
+            else { activeModule = idleModule; }
             return;
         }
 
-        // 3. ОБЫЧНАЯ ЛОГИКА (только когда на земле)
-        if (sprintModule != null && sprintModule.CanEnter(this))
-        { activeModule = sprintModule; }
-        else if (runModule != null && runModule.CanEnter(this))
-        { activeModule = runModule; }
-        else
-        { activeModule = idleModule; }
+        if (sprintModule != null && sprintModule.CanEnter(this)) { activeModule = sprintModule; }
+        else if (runModule != null && runModule.CanEnter(this)) { activeModule = runModule; }
+        else { activeModule = idleModule; }
     }
 
     private void ApplyGravity()
@@ -90,9 +96,30 @@ public class MovementBrain : MonoBehaviour
         controller.Move(verticalVelocity * Time.deltaTime);
     }
 
+    private void ApplyExternalForces()
+    {
+        if (externalForce.magnitude > 0.1f)
+        {
+            controller.Move(externalForce * Time.deltaTime);
+            externalForce = Vector3.Lerp(externalForce, Vector3.zero, 10f * Time.deltaTime);
+        }
+    }
+
     public void RotateTowards(Vector3 direction, float rotSpeed)
     {
         if (direction.magnitude < 0.1f) return;
         transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), rotSpeed * Time.deltaTime);
     }
+
+    public void Teleport(Vector3 offset)
+    {
+        controller.enabled = false;
+        transform.position += offset;
+        controller.enabled = true;
+    }
+
+    // Метод для подброса (Launch)
+    public void Launch(float force) => verticalVelocity.y = force;
+
 }
+

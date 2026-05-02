@@ -49,15 +49,22 @@ public class HUDController : MonoBehaviour
 
     private void OnSkillCooldownChanged(SkillCooldownEvent e)
     {
-        if (e.SkillId == null) return;
-        if (e.SkillId == "Fireball")
-            perkOne.fillAmount = e.CooldownRemaining / GetSkillMaxCooldown(e.SkillId);
-        if (e.SkillId == "Heal")
-            perkTwo.fillAmount = e.CooldownRemaining / GetSkillMaxCooldown(e.SkillId);
-        if (perkOne.fillAmount == 0)
-            perkOne.fillAmount = 100;
-        if (perkTwo.fillAmount == 0)
-            perkTwo.fillAmount = 100;
+        if (string.IsNullOrEmpty(e.SkillId)) return;
+
+        var sm = playerStats.GetComponent<SkillManager>();
+        if (sm == null || sm.combos.Count == 0) return;
+
+        // Используем метод из SkillManager, который мы добавили на прошлом этапе
+        float maxCD = sm.GetComboMaxCooldown(e.SkillId);
+        if (maxCD <= 0) maxCD = 1f;
+
+        float fill = e.CooldownRemaining / maxCD;
+
+        // Связываем слоты UI с первыми двумя комбо в списке менеджера
+        if (e.SkillId == sm.combos[0].skillId)
+        { perkOne.fillAmount = fill > 0 ? fill : 1; }
+        else if (sm.combos.Count > 1 && e.SkillId == sm.combos[1].skillId)
+        { perkTwo.fillAmount = fill > 0 ? fill : 1; }
     }
     private void OnItemAdded(InventoryItemAddedEvent e)
     {
@@ -89,8 +96,9 @@ public class HUDController : MonoBehaviour
     [System.Obsolete]
     private float GetSkillMaxCooldown(string skillId)
     {
-        var skillManager = FindObjectOfType<SkillManager>();
-        var skill = skillManager.skills.Find(s => s.skillId == skillId);
-        return skill != null ? skill.cooldown : 1f;
+        // Исправляем обращение: теперь ищем в списке combos
+        var skillManager = playerStats.GetComponent<SkillManager>();
+        var combo = skillManager.combos.Find(s => s.skillId == skillId);
+        return combo != null ? combo.finalCooldown : 1f;
     }
 }

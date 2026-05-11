@@ -15,8 +15,8 @@ public class AIUIGenerator : EditorWindow
     private string _status = "Ready";
     private bool _isLoading = false;
 
-    // store key in EditorPrefs so it survives editor restarts and stays out of source control
-    private const string API_KEY_PREF = "AIUIGen_GeminiApiKey";
+    // stored in EditorPrefs — never ends up in source control
+    private const string API_KEY_PREF = "AIUIGen_GroqApiKey";
 
     [MenuItem("Window/UI Toolkit/AI Generator")]
     public static void Open() =>
@@ -29,11 +29,11 @@ public class AIUIGenerator : EditorWindow
 
     void OnGUI()
     {
-        GUILayout.Label("AI UI Generator (Gemini)", EditorStyles.boldLabel);
+        GUILayout.Label("AI UI Generator (Groq)", EditorStyles.boldLabel);
         EditorGUILayout.Space(8);
 
         EditorGUI.BeginChangeCheck();
-        _apiKey = EditorGUILayout.PasswordField("Gemini API Key", _apiKey);
+        _apiKey = EditorGUILayout.PasswordField("Groq API Key", _apiKey);
         if (EditorGUI.EndChangeCheck())
             EditorPrefs.SetString(API_KEY_PREF, _apiKey);
 
@@ -56,7 +56,7 @@ public class AIUIGenerator : EditorWindow
         EditorGUILayout.HelpBox(_status, MessageType.None);
 
         EditorGUILayout.Space(4);
-        EditorGUILayout.LabelField("Get a free API key at aistudio.google.com",
+        EditorGUILayout.LabelField("Get a free API key at console.groq.com",
             EditorStyles.miniLabel);
     }
 
@@ -67,20 +67,17 @@ public class AIUIGenerator : EditorWindow
     private IEnumerator Generate()
     {
         _isLoading = true;
-        _status = "Calling Gemini API...";
+        _status = "Calling Groq API...";
         Repaint();
 
-        // Gemini endpoint — responseMimeType forces pure JSON output, no markdown fences
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/" +
-                  $"gemini-1.5-flash:generateContent?key={_apiKey}";
+        var req = new UnityWebRequest(
+            "https://api.groq.com/openai/v1/chat/completions", "POST");
 
-        var requestBody = BuildRequestBody(_prompt);
-        var req = new UnityWebRequest(url, "POST");
-
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(requestBody);
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(BuildRequestBody(_prompt));
         req.uploadHandler = new UploadHandlerRaw(bodyRaw);
         req.downloadHandler = new DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
+        req.SetRequestHeader("Authorization", $"Bearer {_apiKey}");
 
         yield return req.SendWebRequest();
 
@@ -95,10 +92,10 @@ public class AIUIGenerator : EditorWindow
         _status = "Parsing response...";
         Repaint();
 
-        var json = ParseGeminiResponse(req.downloadHandler.text);
+        var json = ParseGroqResponse(req.downloadHandler.text);
         if (json == null)
         {
-            _status = "Failed to parse Gemini response. Check console.";
+            _status = "Failed to parse Groq response. Check console.";
             _isLoading = false;
             Repaint();
             yield break;
@@ -117,9 +114,7 @@ public class AIUIGenerator : EditorWindow
 
     private string BuildRequestBody(string userPrompt)
     {
-        // system prompt is prepended to the user message as a "user" turn
-        // because Gemini 1.5 Flash supports a systemInstruction field — we use that
-        var systemInstruction = @"You are a Unity UI Toolkit code generator.
+        var systemPrompt = @"You are a Unity UI Toolkit code generator.
 The project uses a factory system with these registered widget types:
   stat-bar   -> StatBar(label, color)
   gold-label -> GoldLabel(value)
@@ -146,17 +141,16 @@ No explanation, no markdown, no backticks. Exactly this shape:
 newWidgets is only populated when the user needs a widget type
 that does not exist in the registered list above.";
 
-        // Gemini request shape
+        // OpenAI-compatible shape — Groq uses the same format
+        // temperature 0.3 keeps JSON output consistent and less creative
         return $@"{{
-    ""systemInstruction"": {{
-        ""parts"": [{{ ""text"": ""{EscapeJson(systemInstruction)}"" }}]
-    }},
-    ""contents"": [{{
-        ""parts"": [{{ ""text"": ""{EscapeJson(userPrompt)}"" }}]
-    }}],
-    ""generationConfig"": {{
-        ""responseMimeType"": ""application/json""
-    }}
+    ""model"": ""llama-3.3-70b-versatile"",
+    ""messages"": [
+        {{ ""role"": ""system"", ""content"": ""{EscapeJson(systemPrompt)}"" }},
+        {{ ""role"": ""user"",   ""content"": ""{EscapeJson(userPrompt)}"" }}
+    ],
+    ""response_format"": {{ ""type"": ""json_object"" }},
+    ""temperature"": 0.3
 }}";
     }
 
@@ -167,20 +161,20 @@ that does not exist in the registered list above.";
          .Replace("\r", "");
 
     // ─────────────────────────────────────────────────────────────
-    // Parse Gemini response envelope
+    // Parse Groq response envelope
     // ─────────────────────────────────────────────────────────────
 
-    private string ParseGeminiResponse(string raw)
+    private string ParseGroqResponse(string raw)
     {
         try
         {
-            var response = JsonUtility.FromJson<GeminiResponse>(raw);
-            var text = response.candidates[0].content.parts[0].text;
+            var response = JsonUtility.FromJson<GroqResponse>(raw);
+            var text = response.choices[0].message.content;
             return SanitizeJson(text);
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"[AIGenerator] Failed to parse Gemini envelope: {e.Message}\nRaw: {raw}");
+            Debug.LogError($"[AIGenerator] Failed to parse Groq envelope: {e.Message}\nRaw: {raw}");
             return null;
         }
     }
@@ -257,13 +251,12 @@ that does not exist in the registered list above.";
     }
 
     // ─────────────────────────────────────────────────────────────
-    // Serialization helpers — Gemini envelope
+    // Serialization helpers — Groq envelope (OpenAI-compatible)
     // ─────────────────────────────────────────────────────────────
 
-    [System.Serializable] class GeminiResponse { public GeminiCandidate[] candidates; }
-    [System.Serializable] class GeminiCandidate { public GeminiContent content; }
-    [System.Serializable] class GeminiContent { public GeminiPart[] parts; }
-    [System.Serializable] class GeminiPart { public string text; }
+    [System.Serializable] class GroqResponse { public GroqChoice[] choices; }
+    [System.Serializable] class GroqChoice { public GroqMessage message; }
+    [System.Serializable] class GroqMessage { public string content; }
 
     // ─────────────────────────────────────────────────────────────
     // Serialization helpers — generated panel schema

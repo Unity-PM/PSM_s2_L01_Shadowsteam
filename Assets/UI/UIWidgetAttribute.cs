@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [AttributeUsage(AttributeTargets.Class)]
@@ -8,13 +9,13 @@ public class UIWidgetAttribute : Attribute
     public UIWidgetAttribute(string typeId) => TypeId = typeId;
 }
 
-// data Unity serializes per-component in the SO
 [Serializable]
 public class WidgetConfig
 {
-    public string typeId;    // matches [UIWidget("typeId")]
+    public string typeId;
     public string name;
-    public string ussClass;  // extra USS class to add
-    public string value;     // generic init value (label text, etc)
-    public Color color = Color.white;
+    public string ussClass;
+    public string value;
+    public string colorHex = "#FFFFFF";
+    public List<WidgetConfig> children; // nested widgets — null = leaf node
 }

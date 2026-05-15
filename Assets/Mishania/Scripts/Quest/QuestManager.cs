@@ -123,6 +123,67 @@ namespace Platformer {
             ApplyProgress(TryTalkSlot);
         }
 
+        /// <summary>Same as <see cref="NotifyNpcTalked"/> — called when NPC dialogue opens (Talk objectives).</summary>
+        internal void NotifyNpcDialogueOpened(string npcId) =>
+            NotifyNpcTalked(npcId);
+
+        internal NpcOfferedQuestPhase GetNpcQuestPhase(string questId) {
+            if (string.IsNullOrEmpty(questId))
+                return NpcOfferedQuestPhase.NotOffered;
+            if (IsQuestCompleted(questId))
+                return NpcOfferedQuestPhase.Completed;
+            if (IsQuestActive(questId))
+                return NpcOfferedQuestPhase.ActiveInProgress;
+            return NpcOfferedQuestPhase.NotOffered;
+        }
+
+        internal bool HasActiveMainQuest() {
+            foreach (QuestRuntimeState state in activeQuests) {
+                if (state.Definition.Category == QuestCategory.Main)
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal bool TryGetActiveMainQuestId(out string activeId) {
+            foreach (QuestRuntimeState state in activeQuests) {
+                if (state.Definition.Category == QuestCategory.Main) {
+                    activeId = state.Definition.QuestId;
+                    return true;
+                }
+            }
+
+            activeId = null;
+            return false;
+        }
+
+        /// <summary>Starts a Main quest from an NPC when no other Main quest is active.</summary>
+        internal bool TryAcceptMainQuestFromNpc(string questId) {
+            if (string.IsNullOrEmpty(questId))
+                return false;
+
+            if (!questById.TryGetValue(questId, out QuestDefinition definition))
+                return false;
+
+            if (definition.Category != QuestCategory.Main) {
+                Debug.LogWarning(
+                    $"QuestManager: TryAcceptMainQuestFromNpc expects Main category ('{questId}' is {definition.Category}).");
+                return false;
+            }
+
+            if (completedQuestIds.Contains(questId))
+                return false;
+
+            if (IsQuestActive(questId))
+                return false;
+
+            if (TryGetActiveMainQuestId(out string otherMainId) && otherMainId != questId)
+                return false;
+
+            return TryStartQuest(questId, QuestCategory.Main);
+        }
+
         /// <summary>Writes current quest snapshot to persistent quest JSON.</summary>
         internal void PersistProgress() =>
             QuestProgressSaveService.Save(BuildSaveDataSnapshot());

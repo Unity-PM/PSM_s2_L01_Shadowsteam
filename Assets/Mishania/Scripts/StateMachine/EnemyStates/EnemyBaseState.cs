@@ -3,16 +3,15 @@
 namespace Platformer {
     public abstract class EnemyBaseState : IState {
         protected readonly Enemy enemy;
-        protected readonly UniversalClipAnimator clipAnimator;
+        protected readonly DynamicAnimator clipAnimator;
 
-        /// <summary>Ids must match entries on the enemy's UniversalClipAnimator.</summary>
-        protected const string IdleId = "IdleNormal";
-        protected const string WalkId = "WalkFWD";
-        protected const string RunId = "RunFWD";
-        protected const string AttackId = "Attack01";
-        protected const string DieId = "Die";
+        protected string IdleId => enemy.AnimIdleId;
+        protected string WalkId => enemy.AnimWalkId;
+        protected string RunId => enemy.AnimRunId;
+        protected string AttackId => enemy.AnimAttackId;
+        protected string DieId => enemy.AnimDieId;
 
-        protected EnemyBaseState(Enemy enemy, UniversalClipAnimator clipAnimator) {
+        protected EnemyBaseState(Enemy enemy, DynamicAnimator clipAnimator) {
             this.enemy = enemy;
             this.clipAnimator = clipAnimator;
         }

@@ -249,7 +249,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b4b82e78a7894d847a8eda5eabfe29c7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UniversalClipAnimator
+  m_EditorClassIdentifier: Assembly-CSharp::DynamicAnimator
   defaultState: Idle
   states:
   - id: Idle

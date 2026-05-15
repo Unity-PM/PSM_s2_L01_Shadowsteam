@@ -7,7 +7,7 @@ using UnityEngine.Playables;
 using UnityEngine.Serialization;
 
 [RequireComponent(typeof(Animator))]
-public class UniversalClipAnimator : MonoBehaviour
+public class DynamicAnimator : MonoBehaviour
 {
     public enum InputPlaybackMode
     {
@@ -80,7 +80,7 @@ public class UniversalClipAnimator : MonoBehaviour
 
         RebuildStateMap();
 
-        graph = PlayableGraph.Create($"{name}_UniversalAnimator");
+        graph = PlayableGraph.Create($"{name}_DynamicAnimator");
         graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
 
         mixer = AnimationMixerPlayable.Create(graph, 2);

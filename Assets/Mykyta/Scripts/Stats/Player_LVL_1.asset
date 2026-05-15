@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03a8aff44875fe349af32fb4a228a801, type: 3}
   m_Name: Player_LVL_1
   m_EditorClassIdentifier: Assembly-CSharp::StatSO
-  MaxHP: 10
+  MaxHP: 100
   MaxMP: 10
   MaxStamina: 10
-  HPRegen: 0.2
+  HPRegen: 0
   MPRegen: 0.2
   StaminaRegen: 2
   ATK: 1

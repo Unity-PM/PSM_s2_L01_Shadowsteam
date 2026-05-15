@@ -8,11 +8,29 @@ namespace Platformer {
     public class Enemy : Entity {
         [SerializeField] NavMeshAgent agent;
         [SerializeField] PlayerDetector playerDetector;
-        [SerializeField] UniversalClipAnimator clipAnimator;
+        [SerializeField] DynamicAnimator clipAnimator;
         
         [SerializeField] float wanderRadius = 10f;
         [SerializeField] float timeBetweenAttacks = 1f;
-        
+        [SerializeField] float damageToPlayer = 10f;
+
+        [Header("Clip ids (как в DynamicAnimator на этом враге)")]
+        [SerializeField] string animIdleId = "Idle";
+        [SerializeField] string animWalkId = "WalkFWD";
+        [SerializeField] string animRunId = "Run";
+        [SerializeField] string animAttackId = "Attack01";
+        [SerializeField] string animDieId = "Die";
+
+        [Header("Поворот к цели в атаке")]
+        [SerializeField] float attackTurnSpeedDegrees = 720f;
+
+        internal string AnimIdleId => animIdleId;
+        internal string AnimWalkId => animWalkId;
+        internal string AnimRunId => animRunId;
+        internal string AnimAttackId => animAttackId;
+        internal string AnimDieId => animDieId;
+        internal float AttackTurnSpeedDegrees => attackTurnSpeedDegrees;
+
         StateMachine stateMachine;
         
         CountdownTimer attackTimer;
@@ -21,7 +39,7 @@ namespace Platformer {
             if (agent == null) agent = GetComponent<NavMeshAgent>();
             if (playerDetector == null) playerDetector = GetComponent<PlayerDetector>();
             if (clipAnimator == null)
-                clipAnimator = GetComponent<UniversalClipAnimator>() ?? GetComponentInChildren<UniversalClipAnimator>();
+                clipAnimator = GetComponent<DynamicAnimator>() ?? GetComponentInChildren<DynamicAnimator>();
         }
 
         void Start() {
@@ -54,11 +72,27 @@ namespace Platformer {
         }
         
         public void Attack() {
-            if (attackTimer.IsRunning) return;
-            if (playerDetector.PlayerHealth == null) return;
-            
+            if (attackTimer.IsRunning)
+                return;
+
+            if (!playerDetector.CanAttackPlayer())
+                return;
+
+            if (playerDetector.PlayerHealth != null) {
+                attackTimer.Start();
+                playerDetector.PlayerHealth.TakeDamage(Mathf.RoundToInt(damageToPlayer));
+                return;
+            }
+
+            if (playerDetector.Player == null)
+                return;
+
+            StatComponent playerStats = playerDetector.Player.GetComponent<StatComponent>();
+            if (playerStats == null)
+                return;
+
             attackTimer.Start();
-            playerDetector.PlayerHealth.TakeDamage(10);
+            EventBus.Publish(new StatChangeEvent(playerStats, StatType.HP, -damageToPlayer));
         }
     }
 }

@@ -6,15 +6,15 @@ namespace Platformer {
         readonly NavMeshAgent agent;
         readonly Transform player;
         
-        public EnemyChaseState(Enemy enemy, UniversalClipAnimator clipAnimator, NavMeshAgent agent, Transform player) : base(enemy, clipAnimator) {
+        public EnemyChaseState(Enemy enemy, DynamicAnimator clipAnimator, NavMeshAgent agent, Transform player) : base(enemy, clipAnimator) {
             this.agent = agent;
             this.player = player;
         }
         
         public override void OnEnter() {
-            Debug.Log("Chase");
             agent.isStopped = false;
-            SafePlay(RunId);
+            // ForcePlay: прерывает зацикленную атаку, когда вышли из дистанции удара
+            SafeForcePlay(RunId);
         }
         
         public override void Update() {

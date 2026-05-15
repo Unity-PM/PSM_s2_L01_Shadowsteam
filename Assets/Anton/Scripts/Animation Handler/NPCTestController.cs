@@ -3,11 +3,11 @@ using UnityEngine;
 
 public class NPCTestController : MonoBehaviour
 {
-    [SerializeField] private UniversalClipAnimator animator;
+    [SerializeField] private DynamicAnimator animator;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     private void Reset()
     {
-        animator = GetComponent<UniversalClipAnimator>();
+        animator = GetComponent<DynamicAnimator>();
     }
     void Start()
     {

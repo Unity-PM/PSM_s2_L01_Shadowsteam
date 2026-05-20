@@ -70,7 +70,8 @@ public class StatBar : VisualElement, IConfigurable
 
     public void Configure(WidgetConfig cfg)
     {
-        Label = cfg.value;   // e.g. "HP"
-        FillColor = cfg.color;   // e.g. red
+        Label = cfg.value;
+        if (ColorUtility.TryParseHtmlString(cfg.colorHex, out var col))
+            FillColor = col;
     }
 }

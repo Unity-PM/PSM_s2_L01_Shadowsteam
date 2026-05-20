@@ -19,14 +19,17 @@ MonoBehaviour:
     name: _hpBar
     ussClass: ../Bar/StatBar.uss
     value: HP
-    color: {r: 0.9098039, g: 0.33333334, b: 0.33333334, a: 1}
+    colorHex: '#E85555'
+    children: []
   - typeId: stat-bar
     name: _mpBar
     ussClass: ../Bar/StatBar.uss
     value: MP
-    color: {r: 0.33333334, g: 0.53333336, b: 0.9098039, a: 1}
+    colorHex: '#5588E8'
+    children: []
   - typeId: stat-bar
     name: _stBar
     ussClass: ../Bar/StatBar.uss
     value: ST
-    color: {r: 0.33333334, g: 0.78431374, b: 0.33333334, a: 1}
+    colorHex: '#55C855'
+    children: []

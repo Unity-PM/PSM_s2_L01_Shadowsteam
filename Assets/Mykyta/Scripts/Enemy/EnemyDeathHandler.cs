@@ -1,27 +1,56 @@
+using Platformer;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class EnemyDeathHandler : MonoBehaviour
 {
-    private StatComponent stats;
-    private void Awake()
+    [SerializeField] private string deathAnimationStateId = "Die";
+    [SerializeField] private float destroyDelaySeconds = 0.5f;
+
+    StatComponent stats;
+    DynamicAnimator clipAnimator;
+    Enemy enemy;
+    NavMeshAgent agent;
+
+    void Awake()
     {
         stats = GetComponent<StatComponent>();
+        clipAnimator = GetComponent<DynamicAnimator>() ?? GetComponentInChildren<DynamicAnimator>();
+        enemy = GetComponent<Enemy>();
+        agent = GetComponent<NavMeshAgent>();
     }
-    private void OnEnable()
+
+    void OnEnable()
     {
         EventBus.Subscribe<DeathEvent>(OnDeath);
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         EventBus.Unsubscribe<DeathEvent>(OnDeath);
     }
 
-    private void OnDeath(DeathEvent e)
+    void OnDeath(DeathEvent e)
     {
-        if (e.target != stats)
+        if (stats == null || e.target != stats)
             return;
 
-        Destroy(gameObject, 0.5f);
+        if (enemy != null)
+            enemy.enabled = false;
+
+        if (agent != null)
+            agent.enabled = false;
+
+        string dieStateId = enemy != null ? enemy.AnimDieId : deathAnimationStateId;
+        float delay = destroyDelaySeconds;
+
+        if (clipAnimator != null && !string.IsNullOrEmpty(dieStateId))
+        {
+            clipAnimator.ForcePlay(dieStateId);
+            if (clipAnimator.TryGetClipLength(dieStateId, out float clipLength))
+                delay = Mathf.Max(delay, clipLength);
+        }
+
+        Destroy(gameObject, delay);
     }
 }

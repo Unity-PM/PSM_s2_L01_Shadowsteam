@@ -11,9 +11,15 @@ public class ThirdPersonCamera : MonoBehaviour
 
     void LateUpdate()
     {
-        if (!target) return;
-        _yaw += UnityEngine.InputSystem.Mouse.current.delta.x.ReadValue() * mouseSensitivity * 0.1f;
-        _pitch = Mathf.Clamp(_pitch - UnityEngine.InputSystem.Mouse.current.delta.y.ReadValue() * mouseSensitivity * 0.1f, -20f, 70f);
+        if (!target)
+            return;
+
+        var mouse = UnityEngine.InputSystem.Mouse.current;
+        if (mouse == null)
+            return;
+
+        _yaw += mouse.delta.x.ReadValue() * mouseSensitivity * 0.1f;
+        _pitch = Mathf.Clamp(_pitch - mouse.delta.y.ReadValue() * mouseSensitivity * 0.1f, -20f, 70f);
         transform.eulerAngles = new Vector3(_pitch, _yaw, 0);
         transform.position = (target.position + offset) - transform.forward * distance;
     }

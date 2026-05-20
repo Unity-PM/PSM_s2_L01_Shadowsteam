@@ -4,26 +4,35 @@ using UnityEngine.AI;
 namespace Platformer {
     public class EnemyAttackState : EnemyBaseState {
         readonly NavMeshAgent agent;
-        readonly Transform player;
-        
-        public EnemyAttackState(Enemy enemy, DynamicAnimator clipAnimator, NavMeshAgent agent, Transform player) : base(enemy, clipAnimator) {
+        readonly PlayerDetector playerDetector;
+
+        public EnemyAttackState(Enemy enemy, DynamicAnimator clipAnimator, NavMeshAgent agent, PlayerDetector playerDetector) : base(enemy, clipAnimator) {
             this.agent = agent;
-            this.player = player;
+            this.playerDetector = playerDetector;
         }
-        
+
         public override void OnEnter() {
+            if (agent == null)
+                return;
+
+            ResetLocomotionTracking();
             agent.updateRotation = false;
             agent.isStopped = true;
             agent.ResetPath();
-            SafeForcePlay(AttackId);
+            enemy.TryStartAttack();
         }
 
         public override void Update() {
+            if (agent == null)
+                return;
+
             FacePlayerGrounded(enemy.AttackTurnSpeedDegrees);
-            enemy.Attack();
+            enemy.UpdateAttack();
+            enemy.TryStartAttack();
         }
 
         void FacePlayerGrounded(float turnSpeedDegrees) {
+            Transform player = playerDetector?.Player;
             if (player == null)
                 return;
 
@@ -38,7 +47,13 @@ namespace Platformer {
         }
 
         public override void OnExit() {
+            enemy.CancelPendingAttack();
+
+            if (agent == null)
+                return;
+
             agent.updateRotation = true;
+            agent.isStopped = false;
         }
     }
 }

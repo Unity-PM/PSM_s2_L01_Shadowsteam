@@ -26,6 +26,8 @@ public class DynamicAnimator : MonoBehaviour
         public float fadeTime = 0.15f;
         public float speed = 1f;
         public string nextStateAfterFinish;
+        [Tooltip("Blocked movement while animation is playing (useful for Attack, Die).")]
+        public bool locksMovement;
     }
 
     [Serializable]
@@ -46,6 +48,8 @@ public class DynamicAnimator : MonoBehaviour
     [Header("Animation Setup")]
     [SerializeField] private string defaultState = "Idle";
     [SerializeField] private List<AnimationState> states = new();
+    [SerializeField] private float defaultLocomotionFadeTime = 0.15f;
+    [SerializeField] private float defaultActionFadeTime = 0.08f;
 
     [Header("Input Setup")]
     [SerializeField] private List<InputAnimationBinding> inputBindings = new();
@@ -71,14 +75,66 @@ public class DynamicAnimator : MonoBehaviour
     private string deferredReleaseAnimationId;
     private string deferredReleaseFallbackStateId;
     private int deferredReleaseTargetCycle = -1;
+    private bool inputEnabled = true;
 
     public string CurrentStateId => pendingState?.id ?? currentState?.id;
+
+    public bool IsMovementLocked =>
+        IsStateCurrentlyBlocking(currentState)
+        || (isFading && IsStateCurrentlyBlocking(pendingState));
+
+    public void SetInputEnabled(bool enabled)
+    {
+        inputEnabled = enabled;
+        if (enabled)
+            return;
+
+        activeBindingTimes.Clear();
+        ClearDeferredRelease();
+    }
+
+    public bool TryGetClipLength(string stateId, out float length)
+    {
+        length = 0f;
+
+        if (!stateMap.TryGetValue(stateId, out var state) || state?.clip == null)
+            return false;
+
+        length = state.clip.length / Mathf.Max(0.01f, state.speed);
+        return true;
+    }
+
+    public bool TryGetStateNormalizedTime(string stateId, out float normalizedTime)
+    {
+        normalizedTime = 0f;
+
+        if (!stateMap.TryGetValue(stateId, out var state) || state?.clip == null)
+            return false;
+
+        if (currentState == null || !string.Equals(currentState.id, stateId, StringComparison.Ordinal))
+            return false;
+
+        if (!currentPlayable.IsValid())
+            return false;
+
+        float duration = state.clip.length / Mathf.Max(0.01f, state.speed);
+        if (duration <= Mathf.Epsilon)
+            return false;
+
+        normalizedTime = Mathf.Clamp01((float)(currentPlayable.GetTime() / duration));
+        return true;
+    }
 
     private void Awake()
     {
         animator = GetComponent<Animator>();
 
+        if (animator.runtimeAnimatorController != null)
+            animator.runtimeAnimatorController = null;
+
         RebuildStateMap();
+        ApplyCombatStateDefaults();
+        EnsureValidDefaultState();
 
         graph = PlayableGraph.Create($"{name}_DynamicAnimator");
         graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
@@ -97,6 +153,9 @@ public class DynamicAnimator : MonoBehaviour
 
     private void OnEnable()
     {
+        if (graph.IsValid())
+            graph.Play();
+
         subscribedActions.Clear();
 
         foreach (var binding in inputBindings)
@@ -121,6 +180,9 @@ public class DynamicAnimator : MonoBehaviour
 
         subscribedActions.Clear();
         activeBindingTimes.Clear();
+
+        if (graph.IsValid())
+            graph.Stop();
     }
 
     private void Update()
@@ -140,12 +202,25 @@ public class DynamicAnimator : MonoBehaviour
         Play(stateId, true);
     }
 
+    public void ResetToState(string stateId)
+    {
+        activeBindingTimes.Clear();
+        ClearDeferredRelease();
+        ForcePlay(stateId);
+    }
+
     private void OnActionPerformed(InputAction.CallbackContext context)
     {
+        if (!inputEnabled)
+            return;
+
         for (int i = 0; i < inputBindings.Count; i++)
         {
             var binding = inputBindings[i];
             if (binding.action?.action != context.action || string.IsNullOrWhiteSpace(binding.animationId))
+                continue;
+
+            if (IsMovementLocked && !ShouldAllowDuringMovementLock(binding.animationId))
                 continue;
 
             if (ShouldTrackAsActive(binding, context.action))
@@ -153,7 +228,7 @@ public class DynamicAnimator : MonoBehaviour
 
             CancelDeferredRelease(binding.animationId);
 
-            if (binding.forcePlay)
+            if (binding.forcePlay || ShouldAllowDuringMovementLock(binding.animationId))
                 ForcePlay(binding.animationId);
             else
                 Play(binding.animationId);
@@ -162,6 +237,8 @@ public class DynamicAnimator : MonoBehaviour
 
     private void OnActionCanceled(InputAction.CallbackContext context)
     {
+        if (!inputEnabled)
+            return;
         string fallbackStateId = null;
         bool changed = false;
         string deferredAnimationId = null;
@@ -199,6 +276,9 @@ public class DynamicAnimator : MonoBehaviour
         if (!TryGetState(stateId, out var state))
             return;
 
+        if (!force && IsMovementLocked && !IsStateLockingMovement(state))
+            return;
+
         bool isSameCurrentState = currentState?.id == state.id;
         bool isSamePendingState = pendingState?.id == state.id;
         bool canReplayFinishedCurrentState = isSameCurrentState && CanReplayCurrentState(state);
@@ -232,9 +312,61 @@ public class DynamicAnimator : MonoBehaviour
 
         pendingState = state;
         fadeTimer = 0f;
-        currentFadeTime = Mathf.Max(0.01f, state.fadeTime);
+        currentFadeTime = ResolveFadeTime(state);
         isFading = true;
     }
+
+    float ResolveFadeTime(AnimationState state)
+    {
+        if (state.fadeTime > 0f)
+            return state.fadeTime;
+
+        float fade = IsStateLockingMovement(state) ? defaultActionFadeTime : defaultLocomotionFadeTime;
+        return Mathf.Max(0.01f, fade);
+    }
+
+    bool IsStateCurrentlyBlocking(AnimationState state)
+    {
+        if (state == null)
+            return false;
+
+        if (string.Equals(state.id, "Die", StringComparison.Ordinal))
+            return ReferenceEquals(state, currentState) || ReferenceEquals(state, pendingState);
+
+        if (!IsStateLockingMovement(state))
+            return false;
+
+        return IsClipStillPlaying(state);
+    }
+
+    bool IsClipStillPlaying(AnimationState state)
+    {
+        if (state?.clip == null || !currentPlayable.IsValid() || currentState != state)
+            return false;
+
+        float duration = state.clip.length / Mathf.Max(0.01f, state.speed);
+        return currentPlayable.GetTime() < duration - 0.02f;
+    }
+
+    bool IsStateLockingMovement(AnimationState state)
+    {
+        if (state == null)
+            return false;
+
+        if (state.locksMovement)
+            return true;
+
+        if (string.Equals(state.id, "Die", StringComparison.Ordinal))
+            return true;
+
+        return !string.IsNullOrEmpty(state.id)
+            && state.id.StartsWith("Attack", StringComparison.Ordinal);
+    }
+
+    static bool ShouldAllowDuringMovementLock(string animationId) =>
+        !string.IsNullOrEmpty(animationId)
+        && (animationId.StartsWith("Attack", StringComparison.Ordinal)
+            || string.Equals(animationId, "Die", StringComparison.Ordinal));
 
     private AnimationClipPlayable CreatePlayable(AnimationState state)
     {
@@ -506,6 +638,46 @@ public class DynamicAnimator : MonoBehaviour
 
             stateMap[state.id] = state;
         }
+    }
+
+    void ApplyCombatStateDefaults()
+    {
+        foreach (var state in states)
+        {
+            if (state == null || string.IsNullOrWhiteSpace(state.id))
+                continue;
+
+            if (!state.id.StartsWith("Attack", StringComparison.Ordinal))
+                continue;
+
+            state.loop = false;
+            state.locksMovement = true;
+            if (state.fadeTime <= 0f)
+                state.fadeTime = defaultActionFadeTime;
+
+            if (string.IsNullOrWhiteSpace(state.nextStateAfterFinish))
+                state.nextStateAfterFinish = defaultState;
+        }
+    }
+
+    private void EnsureValidDefaultState()
+    {
+        if (!string.IsNullOrWhiteSpace(defaultState) && stateMap.ContainsKey(defaultState))
+            return;
+
+        foreach (var state in states)
+        {
+            if (state == null || string.IsNullOrWhiteSpace(state.id) || state.clip == null)
+                continue;
+
+            Debug.LogWarning(
+                $"Default animation state '{defaultState}' not found on {name}. Falling back to '{state.id}'.",
+                this);
+            defaultState = state.id;
+            return;
+        }
+
+        Debug.LogError($"DynamicAnimator on {name} has no valid animation states.", this);
     }
 
     private void OnDestroy()

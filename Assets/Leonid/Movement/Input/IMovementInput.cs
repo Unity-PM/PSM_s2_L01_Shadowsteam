@@ -3,6 +3,6 @@ using UnityEngine;
 public interface IMovementInput
 {
     Vector2 MoveVector { get; }
-    bool IsSprintPressed { get; }
+    bool IsRunPressed { get; }
     bool IsJumpDown { get; }
 }

@@ -13,8 +13,11 @@ public class StatComponent : MonoBehaviour
     private float currentStamina;
 
     private bool isStaminaExhausted;
+    private bool isDead;
 
     public bool StaminaRegenPaused { get; set; }
+    public bool HPRegenPaused { get; set; }
+    public bool IsDead => isDead;
 
 
     private Dictionary<StatType, float> modifiers = new Dictionary<StatType, float>();
@@ -25,9 +28,9 @@ public class StatComponent : MonoBehaviour
     public float getStamina() => currentStamina;
     public bool IsStaminaExhausted => isStaminaExhausted;
 
-    public float getMaxHP() => baseStatsTemplate.MaxHP + getModifier(StatType.HP);
-    public float getMaxMP() => baseStatsTemplate.MaxMP + getModifier(StatType.MP);
-    public float getMaxStamina() => baseStatsTemplate.MaxStamina + getModifier(StatType.Stamina);
+    public float getMaxHP() => baseStatsTemplate != null ? baseStatsTemplate.MaxHP + getModifier(StatType.HP) : 0f;
+    public float getMaxMP() => baseStatsTemplate != null ? baseStatsTemplate.MaxMP + getModifier(StatType.MP) : 0f;
+    public float getMaxStamina() => baseStatsTemplate != null ? baseStatsTemplate.MaxStamina + getModifier(StatType.Stamina) : 0f;
 
     private void EnsureModifiersInitialized()
     {
@@ -40,6 +43,13 @@ public class StatComponent : MonoBehaviour
 
     private void Start()
     {
+        if (baseStatsTemplate == null)
+        {
+            Debug.LogError($"StatComponent on {name} is missing baseStatsTemplate.", this);
+            enabled = false;
+            return;
+        }
+
         EnsureModifiersInitialized();
 
         currentHP = getMaxHP();
@@ -48,6 +58,12 @@ public class StatComponent : MonoBehaviour
 
         EventBus.Subscribe<StatChangeEvent>(OnStatChangeRequested);
         EventBus.Subscribe<StatModifierEvent>(OnModifier);
+    }
+
+    public void ClearDeadState()
+    {
+        isDead = false;
+        HPRegenPaused = false;
     }
 
     private void OnDestroy()
@@ -69,14 +85,20 @@ public class StatComponent : MonoBehaviour
         switch (e.statType)
         {
             case StatType.HP:
+                if (isDead && e.amount < 0f)
+                    break;
+
                 currentHP = Mathf.Clamp(
                     currentHP + e.amount,
                     0,
                     getMaxHP()
                 );
 
-                if (currentHP <= 0)
+                if (currentHP <= 0 && !isDead)
+                {
+                    isDead = true;
                     EventBus.Publish(new DeathEvent(this));
+                }
                 break;
 
             case StatType.MP:
@@ -185,17 +207,29 @@ public class StatComponent : MonoBehaviour
 
     private void RegenerateStats()
     {
-        currentHP = Mathf.Min(currentHP + baseStatsTemplate.HPRegen * Time.deltaTime, getMaxHP());
+        if (baseStatsTemplate == null)
+            return;
+
+        float previousHP = currentHP;
+        float previousMP = currentMP;
+        float previousStamina = currentStamina;
+
+        if (!isDead && !HPRegenPaused)
+            currentHP = Mathf.Min(currentHP + baseStatsTemplate.HPRegen * Time.deltaTime, getMaxHP());
+
         currentMP = Mathf.Min(currentMP + baseStatsTemplate.MPRegen * Time.deltaTime, getMaxMP());
 
-        // Регеним стамину только если нет паузы
         if (!StaminaRegenPaused)
         {
             currentStamina = Mathf.Min(currentStamina + baseStatsTemplate.StaminaRegen * Time.deltaTime, getMaxStamina());
 
-            // Логика из прошлого шага: если мы восстановили достаточно, снимаем истощение
             if (isStaminaExhausted && currentStamina >= getMaxStamina() / 6f) isStaminaExhausted = false;
         }
+
+        if (Mathf.Approximately(previousHP, currentHP)
+            && Mathf.Approximately(previousMP, currentMP)
+            && Mathf.Approximately(previousStamina, currentStamina))
+            return;
 
         EventBus.Publish(new StatUpdatedEvent(this));
     }

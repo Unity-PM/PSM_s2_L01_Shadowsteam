@@ -18,6 +18,7 @@ public class PlayerDeathHandler : MonoBehaviour {
     [Header("Death & respawn")]
     [SerializeField] float respawnDelaySeconds = 3f;
     [SerializeField] bool restoreFullVitalityOnRespawn = true;
+    [SerializeField] float fallToGroundTimeoutSeconds = 6f;
 
     [Header("Animation (DynamicAnimator)")]
     [Tooltip("Необязательно: находится автоматически на этом объекте или в дочерних, как у Enemy.")]
@@ -46,6 +47,9 @@ public class PlayerDeathHandler : MonoBehaviour {
 
     void Awake() {
         stats = GetComponent<StatComponent>();
+        if (stats == null)
+            Debug.LogError("PlayerDeathHandler requires StatComponent on the same GameObject.", this);
+
         movementBrain = GetComponent<MovementBrain>();
         characterController = GetComponent<CharacterController>();
         if (dynamicAnimator == null)
@@ -70,7 +74,7 @@ public class PlayerDeathHandler : MonoBehaviour {
     }
 
     void OnDeath(DeathEvent e) {
-        if (e.target != stats)
+        if (stats == null || e.target != stats)
             return;
         if (deathRoutine != null)
             return;
@@ -81,28 +85,68 @@ public class PlayerDeathHandler : MonoBehaviour {
     IEnumerator DeathAndRespawnRoutine() {
         onDeathSequenceStarted?.Invoke();
 
+        stats.HPRegenPaused = true;
+
         if (publishLegacyGameOverEvent)
             EventBus.Publish(new GameOverEvent(true));
 
-        SetMovementLocked(true);
+        SetPlayerControlLocked(true);
 
-        if (playDeathAnimationOnDeath && dynamicAnimator != null && !string.IsNullOrEmpty(deathAnimationStateId))
-            dynamicAnimator.ForcePlay(deathAnimationStateId);
+        if (IsAirborne())
+            yield return WaitUntilGrounded();
 
-        yield return new WaitForSeconds(Mathf.Max(0f, respawnDelaySeconds));
+        PlayDeathAnimation();
+
+        float deathClipLength = 0f;
+        if (dynamicAnimator != null && dynamicAnimator.TryGetClipLength(deathAnimationStateId, out deathClipLength))
+            yield return new WaitForSeconds(Mathf.Max(respawnDelaySeconds, deathClipLength));
+        else
+            yield return new WaitForSeconds(Mathf.Max(0f, respawnDelaySeconds));
 
         TeleportToSpawn();
 
         if (restoreFullVitalityOnRespawn)
             RestoreFullVitality(stats);
 
-        if (dynamicAnimator != null && !string.IsNullOrEmpty(respawnAnimationStateId))
-            dynamicAnimator.Play(respawnAnimationStateId);
+        stats.ClearDeadState();
+        stats.HPRegenPaused = false;
 
-        SetMovementLocked(false);
+        if (dynamicAnimator != null) {
+            dynamicAnimator.SetInputEnabled(true);
+            if (!string.IsNullOrEmpty(respawnAnimationStateId))
+                dynamicAnimator.ResetToState(respawnAnimationStateId);
+        }
+
+        SetPlayerControlLocked(false);
 
         onRespawnCompleted?.Invoke();
         deathRoutine = null;
+    }
+
+    void PlayDeathAnimation() {
+        if (!playDeathAnimationOnDeath || dynamicAnimator == null || string.IsNullOrEmpty(deathAnimationStateId))
+            return;
+
+        dynamicAnimator.ForcePlay(deathAnimationStateId);
+    }
+
+    bool IsAirborne() {
+        if (movementBrain != null)
+            return movementBrain.IsAirborne;
+
+        return characterController != null && !characterController.isGrounded;
+    }
+
+    IEnumerator WaitUntilGrounded() {
+        float elapsed = 0f;
+
+        while (elapsed < fallToGroundTimeoutSeconds) {
+            if (characterController != null && characterController.isGrounded)
+                yield break;
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
     }
 
     void CaptureSpawnFromTransform(Transform t) {
@@ -136,14 +180,18 @@ public class PlayerDeathHandler : MonoBehaviour {
             transform.SetPositionAndRotation(p, r);
     }
 
-    void SetMovementLocked(bool locked) {
+    void SetPlayerControlLocked(bool locked) {
         if (!disableMovementWhileDead)
             return;
 
-        if (movementBrain != null)
-            movementBrain.enabled = !locked;
+        if (movementBrain != null) {
+            movementBrain.SetInputLocked(locked);
+            if (locked)
+                movementBrain.StopHorizontalMovement();
+        }
 
-        // CharacterController оставляем включённым, кроме кадра телепорта — иначе нет столкновений с землёй после респавна.
+        if (dynamicAnimator != null)
+            dynamicAnimator.SetInputEnabled(!locked);
     }
 
     static void RestoreFullVitality(StatComponent s) {

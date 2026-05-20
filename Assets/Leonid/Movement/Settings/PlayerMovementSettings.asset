@@ -16,8 +16,8 @@ MonoBehaviour:
   sprintSpeed: 10
   rotationSpeed: 10
   gravity: -19.62
-  jumpHeight: 2
-  staminaDrainPerSecond: 10
-  glideFallSpeed: -1.5
-  glideForwardSpeed: 8
-  glideStaminaDrain: 5
+  jumpHeight: 1
+  walkSpeed: 3.5
+  runStaminaDrainPerSecond: 0.3
+  staminaDrainPerSecond: 8
+  jumpStaminaCost: 5

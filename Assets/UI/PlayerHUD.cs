@@ -6,13 +6,18 @@ public class PlayerHUD : MonoBehaviour
     [SerializeField] private PanelDefinitionSO _panelDef;
     [SerializeField] private StatComponent _player;
 
-    private StatBar _hpBar, _mpBar, _stBar;
+    StatBar _hpBar, _mpBar, _stBar;
 
     void OnEnable()
     {
-        var root = GetComponent<UIDocument>().rootVisualElement;
+        var uiDocument = GetComponent<UIDocument>();
+        if (uiDocument == null || _panelDef == null || _player == null)
+        {
+            Debug.LogError("PlayerHUD is missing UIDocument, panel definition, or player stats.", this);
+            return;
+        }
 
-        // one line builds the entire panel from the SO
+        var root = uiDocument.rootVisualElement;
         var panel = UIFactory.Build(_panelDef, root);
 
         _hpBar = panel.Q<StatBar>("_hpBar");
@@ -28,14 +33,17 @@ public class PlayerHUD : MonoBehaviour
         EventBus.Unsubscribe<StatUpdatedEvent>(OnStatUpdated);
     }
 
-    private void OnStatUpdated(StatUpdatedEvent e)
+    void OnStatUpdated(StatUpdatedEvent e)
     {
         if (e.target != _player) return;
         Refresh();
     }
 
-    private void Refresh()
+    void Refresh()
     {
+        if (_player == null || _hpBar == null || _mpBar == null || _stBar == null)
+            return;
+
         _hpBar.SetValue(_player.getHP(), _player.getMaxHP());
         _mpBar.SetValue(_player.getMP(), _player.getMaxMP());
         _stBar.SetValue(_player.getStamina(), _player.getMaxStamina());

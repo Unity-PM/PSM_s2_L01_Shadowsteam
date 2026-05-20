@@ -7,33 +7,54 @@ namespace Platformer {
         readonly Vector3 startPoint;
         readonly float wanderRadius;
 
+        float stuckTimer;
+        Vector3 lastPosition;
+
         public EnemyWanderState(Enemy enemy, DynamicAnimator clipAnimator, NavMeshAgent agent, float wanderRadius) : base(enemy, clipAnimator) {
             this.agent = agent;
             this.startPoint = enemy.transform.position;
             this.wanderRadius = wanderRadius;
+            lastPosition = enemy.transform.position;
         }
-        
+
         public override void OnEnter() {
+            if (agent == null)
+                return;
+
+            stuckTimer = 0f;
+            lastPosition = enemy.transform.position;
+            ResetLocomotionTracking();
+
             agent.isStopped = false;
+            agent.updateRotation = true;
+            agent.speed = enemy.WalkSpeed;
+
+            PickNewDestination();
             SafeForcePlay(WalkId);
         }
 
         public override void Update() {
-            if (HasReachedDestination()) {
-                var randomDirection = Random.insideUnitSphere * wanderRadius;
-                randomDirection += startPoint;
-                NavMeshHit hit;
-                NavMesh.SamplePosition(randomDirection, out hit, wanderRadius, 1);
-                var finalPosition = hit.position;
-                
-                agent.SetDestination(finalPosition);
+            if (agent == null)
+                return;
+
+            if (EnemyLocomotion.UpdateStuckTimer(agent, ref stuckTimer, ref lastPosition, enemy.StuckResetSeconds)
+                || EnemyLocomotion.HasReachedDestination(agent)) {
+                PickNewDestination();
             }
+
+            SyncLocomotion(agent);
         }
-        
-        bool HasReachedDestination() {
-            return !agent.pathPending
-                   && agent.remainingDistance <= agent.stoppingDistance
-                   && (!agent.hasPath || agent.velocity.sqrMagnitude == 0f);
+
+        void PickNewDestination() {
+            stuckTimer = 0f;
+
+            if (!EnemyLocomotion.TrySampleNavigablePoint(startPoint, wanderRadius, out Vector3 destination)) {
+                SafePlay(IdleId);
+                return;
+            }
+
+            if (!EnemyLocomotion.TrySetDestination(agent, destination))
+                agent.Warp(enemy.transform.position);
         }
     }
 }

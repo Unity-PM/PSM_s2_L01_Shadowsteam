@@ -33,7 +33,7 @@ namespace Platformer {
             if (IsDead)
                 return;
 
-            currentHealth -= damage;
+            currentHealth = Mathf.Max(0, currentHealth - damage);
             PublishHealthPercentage();
             if (currentHealth <= 0)
                 onDiedOnce?.Invoke();

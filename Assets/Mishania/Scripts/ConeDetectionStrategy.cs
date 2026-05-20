@@ -14,6 +14,9 @@ namespace Platformer {
         }
         
         public bool Execute(Transform player, Transform detector, CountdownTimer timer) {
+            if (player == null || detector == null || timer == null)
+                return false;
+
             if (timer.IsRunning) return false;
             
             var directionToPlayer = player.position - detector.position;

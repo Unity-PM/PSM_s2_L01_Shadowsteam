@@ -3,18 +3,28 @@ using UnityEngine.InputSystem;
 
 public class PlayerSkillInput : MonoBehaviour
 {
-    private SkillManager skillManager;
-    private void Awake()
+    SkillManager skillManager;
+
+    void Awake()
     {
-        skillManager = gameObject.GetComponent<SkillManager>();
+        skillManager = GetComponent<SkillManager>();
+        if (skillManager == null)
+            Debug.LogError("PlayerSkillInput requires SkillManager on the same GameObject.", this);
     }
 
-    private void Update()
+    void Update()
     {
-        if (Keyboard.current.digit1Key.wasPressedThisFrame)
+        if (skillManager == null)
+            return;
+
+        var keyboard = Keyboard.current;
+        if (keyboard == null)
+            return;
+
+        if (keyboard.digit1Key.wasPressedThisFrame)
             skillManager.CastSkill("Fireball");
 
-        if (Keyboard.current.digit2Key.wasPressedThisFrame)
+        if (keyboard.digit2Key.wasPressedThisFrame)
             skillManager.CastSkill("Heal");
     }
 }

@@ -1,4 +1,3 @@
-using NUnit.Framework;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -8,6 +7,7 @@ public class HUDController : MonoBehaviour
 {
     [Header("Targets")]
     public StatComponent playerStats;
+    public SkillManager skillManager;
 
     [Header("UI Stat Bars")]
     public Image hpBar;
@@ -23,78 +23,100 @@ public class HUDController : MonoBehaviour
     [Header("UI Item Bars")]
     public List<Image> items;
 
-    [System.Obsolete]
-    private void Awake()
+    void Awake()
+    {
+        if (skillManager == null)
+            skillManager = FindFirstObjectByType<SkillManager>();
+    }
+
+    void OnEnable()
     {
         EventBus.Subscribe<StatUpdatedEvent>(OnStatUpdated);
         EventBus.Subscribe<SkillCooldownEvent>(OnSkillCooldownChanged);
         EventBus.Subscribe<InventoryItemAddedEvent>(OnItemAdded);
     }
 
-    private void Start()
+    void Start()
     {
         RefreshStatUI();
     }
 
-    [System.Obsolete]
-    private void OnDestroy()
+    void OnDisable()
     {
         EventBus.Unsubscribe<StatUpdatedEvent>(OnStatUpdated);
         EventBus.Unsubscribe<SkillCooldownEvent>(OnSkillCooldownChanged);
         EventBus.Unsubscribe<InventoryItemAddedEvent>(OnItemAdded);
     }
 
-    private void OnStatUpdated(StatUpdatedEvent e)
+    void OnStatUpdated(StatUpdatedEvent e)
     {
         if (e.target != playerStats) return;
         RefreshStatUI();
     }
 
-    [System.Obsolete]
-    private void OnSkillCooldownChanged(SkillCooldownEvent e)
+    void OnSkillCooldownChanged(SkillCooldownEvent e)
     {
-        if (e.SkillId == null) return;
-        if (e.SkillId == "Fireball")
-            perkOne.fillAmount = e.CooldownRemaining / GetSkillMaxCooldown(e.SkillId);
-        if (e.SkillId == "Heal")
-            perkTwo.fillAmount = e.CooldownRemaining / GetSkillMaxCooldown(e.SkillId);
-        if (perkOne.fillAmount == 0)
-            perkOne.fillAmount = 100;
-        if (perkTwo.fillAmount == 0)
-            perkTwo.fillAmount = 100;
+        if (e.SkillId == null)
+            return;
+
+        float maxCooldown = GetSkillMaxCooldown(e.SkillId);
+        float fill = maxCooldown > 0f ? 1f - (e.CooldownRemaining / maxCooldown) : 1f;
+        fill = Mathf.Clamp01(fill);
+
+        if (e.SkillId == "Fireball" && perkOne != null)
+            perkOne.fillAmount = fill;
+
+        if (e.SkillId == "Heal" && perkTwo != null)
+            perkTwo.fillAmount = fill;
     }
-    private void OnItemAdded(InventoryItemAddedEvent e)
+
+    void OnItemAdded(InventoryItemAddedEvent e)
     {
-        if (e.item == null) return;
-        foreach(Image item in items)
+        if (e.item == null || items == null)
+            return;
+
+        foreach (Image item in items)
         {
+            if (item == null)
+                continue;
+
             if (item.color != Color.black) {
-                item.color = Color.black; return;
+                item.color = Color.black;
+                return;
             }
         }
     }
-    private void RefreshStatUI()
+
+    void RefreshStatUI()
     {
-        if (playerStats == null) return;
+        if (playerStats == null)
+            return;
 
-        hpBar.fillAmount = playerStats.getHP()/ playerStats.getMaxHP();
+        float maxHp = playerStats.getMaxHP();
+        float maxMp = playerStats.getMaxMP();
+        float maxStamina = playerStats.getMaxStamina();
 
-        mpBar.fillAmount = playerStats.getMP()/ playerStats.getMaxMP();
+        if (hpBar != null)
+            hpBar.fillAmount = maxHp > 0f ? playerStats.getHP() / maxHp : 0f;
+        if (mpBar != null)
+            mpBar.fillAmount = maxMp > 0f ? playerStats.getMP() / maxMp : 0f;
+        if (staminaBar != null)
+            staminaBar.fillAmount = maxStamina > 0f ? playerStats.getStamina() / maxStamina : 0f;
 
-        staminaBar.fillAmount = playerStats.getStamina() / playerStats.getMaxStamina();
-
-        hpText.text = $"{(int)playerStats.getHP()} / {playerStats.getMaxHP()}";
-
-        mpText.text = $"{(int)playerStats.getMP()} / {playerStats.getMaxMP()}";
-
-        staminaText.text = $"{(int)playerStats.getStamina()} / {playerStats.getMaxStamina()}";
+        if (hpText != null)
+            hpText.text = $"{(int)playerStats.getHP()} / {maxHp}";
+        if (mpText != null)
+            mpText.text = $"{(int)playerStats.getMP()} / {maxMp}";
+        if (staminaText != null)
+            staminaText.text = $"{(int)playerStats.getStamina()} / {maxStamina}";
     }
 
-    [System.Obsolete]
-    private float GetSkillMaxCooldown(string skillId)
+    float GetSkillMaxCooldown(string skillId)
     {
-        var skillManager = FindObjectOfType<SkillManager>();
-        var skill = skillManager.skills.Find(s => s.skillId == skillId);
+        if (skillManager == null || skillManager.skills == null)
+            return 1f;
+
+        var skill = skillManager.skills.Find(s => s != null && s.skillId == skillId);
         return skill != null ? skill.cooldown : 1f;
     }
 }

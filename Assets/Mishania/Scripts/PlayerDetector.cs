@@ -37,16 +37,43 @@ namespace Platformer {
         
         void Update() => detectionTimer.Tick(Time.deltaTime);
 
-        /// <summary>Игрок мёртв по <see cref="Health"/> или HP в <see cref="StatComponent"/>.</summary>
+        void RefreshPlayerReferences() {
+            if (Player != null)
+                return;
+
+            var playerObject = GameObject.FindGameObjectWithTag("Player");
+            if (playerObject == null)
+                return;
+
+            Player = playerObject.transform;
+            PlayerHealth = Player.GetComponent<Health>();
+            cachedPlayerStats = Player.GetComponent<StatComponent>();
+        }
+
+        /// <summary>Игрок мёртв по <see cref="Health"/> или флагу <see cref="StatComponent.IsDead"/>.</summary>
         public bool IsPlayerDeadForCombat() {
-            if (PlayerHealth != null)
-                return PlayerHealth.IsDead;
-            if (cachedPlayerStats != null)
-                return cachedPlayerStats.getHP() <= 0f;
-            return false;
+            RefreshPlayerReferences();
+
+            if (PlayerHealth != null && PlayerHealth.IsDead)
+                return true;
+
+            if (cachedPlayerStats == null && Player != null)
+                cachedPlayerStats = Player.GetComponent<StatComponent>();
+
+            return cachedPlayerStats != null && cachedPlayerStats.IsDead;
         }
 
         public bool CanDetectPlayer() {
+            RefreshPlayerReferences();
+
+            if (Player == null || detectionStrategy == null)
+                return false;
+
+            if (IsPlayerDeadForCombat()) {
+                detectionTimer.Stop();
+                return false;
+            }
+
             return detectionTimer.IsRunning || detectionStrategy.Execute(Player, transform, detectionTimer);
         }
 

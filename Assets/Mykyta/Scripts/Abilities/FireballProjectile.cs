@@ -21,7 +21,7 @@ public class FireballProjectile : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        StatComponent target = other.GetComponent<StatComponent>();
+        StatComponent target = other.GetComponentInParent<StatComponent>();
         if (target == null || target == caster) return;
 
         EventBus.Publish(new StatChangeEvent(

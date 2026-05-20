@@ -16,8 +16,18 @@ public class SkillManager : MonoBehaviour
     private void Awake()
     {
         movementBrain = GetComponent<MovementBrain>();
+
+        if (casterStats == null)
+            Debug.LogError("SkillManager requires casterStats.", this);
+
+        if (skills == null)
+            return;
+
         foreach (var skill in skills)
         {
+            if (skill == null || string.IsNullOrEmpty(skill.skillId))
+                continue;
+
             skillMap[skill.skillId] = skill;
             cooldownTimers[skill.skillId] = 0f;
             if (skill is ComboAbilitySO) comboIndices[skill.skillId] = 0;
@@ -50,11 +60,17 @@ public class SkillManager : MonoBehaviour
 
     public void CastSkill(string skillId)
     {
-        if (!skillMap.TryGetValue(skillId, out AbilitySO skill)) return;
-        if (cooldownTimers[skillId] > 0 || casterStats.getMP() < skill.manaCost) return;
+        if (casterStats == null || movementBrain == null)
+            return;
 
-        // Этап 2: Проверка состояния движения
-        if (!skill.allowedStates.Contains(movementBrain.CurrentState)) return;
+        if (!skillMap.TryGetValue(skillId, out AbilitySO skill) || skill == null)
+            return;
+
+        if (cooldownTimers[skillId] > 0 || casterStats.getMP() < skill.manaCost)
+            return;
+
+        if (!skill.allowedStates.Contains(movementBrain.CurrentState))
+            return;
 
         ExecuteAbilityLogic(skill);
 
@@ -66,6 +82,9 @@ public class SkillManager : MonoBehaviour
     {
         if (skill is ComboAbilitySO combo)
         {
+            if (combo.comboSteps == null || combo.comboSteps.Count == 0)
+                return;
+
             int index = comboIndices[skill.skillId];
             combo.comboSteps[index].Execute(casterStats, castPoint);
 

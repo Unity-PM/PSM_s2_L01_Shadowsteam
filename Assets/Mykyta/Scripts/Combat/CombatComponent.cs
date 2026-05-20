@@ -29,6 +29,10 @@ public class CombatComponent : MonoBehaviour {
     void Awake() {
         if (attackerStats == null)
             attackerStats = GetComponent<StatComponent>();
+
+        if (attackerStats == null)
+            Debug.LogError("CombatComponent requires StatComponent on the same GameObject.", this);
+
         if (attackOrigin == null)
             attackOrigin = transform;
     }

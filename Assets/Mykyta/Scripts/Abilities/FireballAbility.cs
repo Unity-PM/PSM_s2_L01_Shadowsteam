@@ -1,20 +1,11 @@
 using UnityEngine;
-[CreateAssetMenu(fileName = "FireballAbility", menuName = "Scriptable Objects/FireballAbility")]
-public class FireballAbility : AbilitySO
-{
-    public GameObject fireball;
-    public float damage;
-    public float speed;
 
+[CreateAssetMenu(fileName = "FireballAbility", menuName = "Scriptable Objects/Abilities/Fireball")]
+public class FireballAbility : RangedAbilitySO
+{
     public override void Execute(StatComponent caster, Transform castPoint)
     {
-        GameObject fb = Instantiate(
-            fireball,
-            castPoint.position,
-            castPoint.rotation
-        );
-
-        FireballProjectile proj = fb.GetComponent<FireballProjectile>();
-        proj.Init(caster, damage, speed);
+        GameObject fb = Instantiate(projectilePrefab, castPoint.position, castPoint.rotation);
+        if (fb.TryGetComponent(out FireballProjectile proj)) proj.Init(caster, damage, speed);
     }
 }

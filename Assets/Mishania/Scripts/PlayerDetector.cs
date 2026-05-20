@@ -11,9 +11,11 @@ namespace Platformer {
         
         public Transform Player { get; private set; }
         public Health PlayerHealth { get; private set; }
-        
+
+        StatComponent cachedPlayerStats;
+
         CountdownTimer detectionTimer;
-        
+
         IDetectionStrategy detectionStrategy;
 
         void Awake() {
@@ -25,6 +27,7 @@ namespace Platformer {
 
             Player = playerObject.transform;
             PlayerHealth = Player.GetComponent<Health>();
+            cachedPlayerStats = Player.GetComponent<StatComponent>();
         }
 
         void Start() {
@@ -34,12 +37,22 @@ namespace Platformer {
         
         void Update() => detectionTimer.Tick(Time.deltaTime);
 
+        /// <summary>Игрок мёртв по <see cref="Health"/> или HP в <see cref="StatComponent"/>.</summary>
+        public bool IsPlayerDeadForCombat() {
+            if (PlayerHealth != null)
+                return PlayerHealth.IsDead;
+            if (cachedPlayerStats != null)
+                return cachedPlayerStats.getHP() <= 0f;
+            return false;
+        }
+
         public bool CanDetectPlayer() {
             return detectionTimer.IsRunning || detectionStrategy.Execute(Player, transform, detectionTimer);
         }
 
         public bool CanAttackPlayer() {
-            if (Player == null) return false;
+            if (Player == null || IsPlayerDeadForCombat())
+                return false;
 
             var detectorPosition = transform.position;
             var playerPosition = Player.position;

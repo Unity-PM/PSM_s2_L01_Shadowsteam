@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: HealAbility
   m_EditorClassIdentifier: Assembly-CSharp::HealAbility
   skillId: Heal
-  manaCost: 5
+  manaCost: 3
   cooldown: 2
-  healAmount: 5
+  allowedStates: 000000000200000003000000
+  healAmount: 20

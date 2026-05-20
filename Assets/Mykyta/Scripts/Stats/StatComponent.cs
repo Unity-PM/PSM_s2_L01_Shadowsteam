@@ -5,9 +5,17 @@ public class StatComponent : MonoBehaviour
 {
     public StatSO baseStatsTemplate;
 
+    [SerializeField]
     private float currentHP;
+    [SerializeField]
     private float currentMP;
+    [SerializeField]
     private float currentStamina;
+
+    private bool isStaminaExhausted;
+
+    public bool StaminaRegenPaused { get; set; }
+
 
     private Dictionary<StatType, float> modifiers = new Dictionary<StatType, float>();
 
@@ -15,16 +23,24 @@ public class StatComponent : MonoBehaviour
     public float getHP() => currentHP;
     public float getMP() => currentMP;
     public float getStamina() => currentStamina;
+    public bool IsStaminaExhausted => isStaminaExhausted;
 
     public float getMaxHP() => baseStatsTemplate.MaxHP + getModifier(StatType.HP);
     public float getMaxMP() => baseStatsTemplate.MaxMP + getModifier(StatType.MP);
     public float getMaxStamina() => baseStatsTemplate.MaxStamina + getModifier(StatType.Stamina);
 
+    private void EnsureModifiersInitialized()
+    {
+        foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
+        {
+            if (!modifiers.ContainsKey(type))
+                modifiers[type] = 0f;
+        }
+    }
 
     private void Start()
     {
-        foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
-            modifiers[type] = 0f;
+        EnsureModifiersInitialized();
 
         currentHP = getMaxHP();
         currentMP = getMaxMP();
@@ -72,12 +88,10 @@ public class StatComponent : MonoBehaviour
                 break;
 
             case StatType.Stamina:
-                currentStamina = Mathf.Clamp(
-                    currentStamina + e.amount,
-                    0,
-                    getMaxStamina()
-                );
+                currentStamina = Mathf.Clamp(currentStamina + e.amount, 0, getMaxStamina());
+                if (currentStamina <= 0) isStaminaExhausted = true;
                 break;
+
         }
 
         EventBus.Publish(new StatUpdatedEvent(this));
@@ -93,6 +107,7 @@ public class StatComponent : MonoBehaviour
 
     private void ApplyModifier(StatType type, float value)
     {
+        EnsureModifiersInitialized();
         modifiers[type] += value;
 
         switch (type)
@@ -119,26 +134,68 @@ public class StatComponent : MonoBehaviour
 
     private float getModifier(StatType type)
     {
+        EnsureModifiersInitialized();
         return modifiers.ContainsKey(type) ? modifiers[type] : 0f;
+    }
+
+    public PlayerStatsData ExportStatsForSave()
+    {
+        EnsureModifiersInitialized();
+
+        var entries = new List<StatModifierEntry>();
+        foreach (var pair in modifiers)
+        {
+            entries.Add(new StatModifierEntry
+            {
+                statType = pair.Key,
+                value = pair.Value
+            });
+        }
+
+        return new PlayerStatsData
+        {
+            hp = currentHP,
+            mp = currentMP,
+            stamina = currentStamina,
+            statModifiers = entries.ToArray()
+        };
+    }
+
+    public void ApplySaveData(PlayerStatsData data)
+    {
+        EnsureModifiersInitialized();
+
+        foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
+            modifiers[type] = 0f;
+
+        if (data?.statModifiers != null)
+        {
+            foreach (var entry in data.statModifiers)
+                modifiers[entry.statType] = entry.value;
+        }
+
+        currentHP = Mathf.Clamp(data?.hp ?? getMaxHP(), 0, getMaxHP());
+        currentMP = Mathf.Clamp(data?.mp ?? getMaxMP(), 0, getMaxMP());
+        currentStamina = Mathf.Clamp(data?.stamina ?? getMaxStamina(), 0, getMaxStamina());
+        isStaminaExhausted = currentStamina <= 0f;
+
+        EventBus.Publish(new StatUpdatedEvent(this));
     }
 
 
     private void RegenerateStats()
     {
-        currentHP = Mathf.Min(
-            currentHP + baseStatsTemplate.HPRegen * Time.deltaTime,
-            getMaxHP()
-        );
+        currentHP = Mathf.Min(currentHP + baseStatsTemplate.HPRegen * Time.deltaTime, getMaxHP());
+        currentMP = Mathf.Min(currentMP + baseStatsTemplate.MPRegen * Time.deltaTime, getMaxMP());
 
-        currentMP = Mathf.Min(
-            currentMP + baseStatsTemplate.MPRegen * Time.deltaTime,
-            getMaxMP()
-        );
+        // Регеним стамину только если нет паузы
+        if (!StaminaRegenPaused)
+        {
+            currentStamina = Mathf.Min(currentStamina + baseStatsTemplate.StaminaRegen * Time.deltaTime, getMaxStamina());
 
-        currentStamina = Mathf.Min(
-            currentStamina + baseStatsTemplate.StaminaRegen * Time.deltaTime,
-            getMaxStamina()
-        );
+            // Логика из прошлого шага: если мы восстановили достаточно, снимаем истощение
+            if (isStaminaExhausted && currentStamina >= getMaxStamina() / 6f) isStaminaExhausted = false;
+        }
 
         EventBus.Publish(new StatUpdatedEvent(this));
     }

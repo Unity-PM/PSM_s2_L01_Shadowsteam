@@ -8,11 +8,29 @@ namespace Platformer {
     public class Enemy : Entity {
         [SerializeField] NavMeshAgent agent;
         [SerializeField] PlayerDetector playerDetector;
-        [SerializeField] Animator animator;
+        [SerializeField] DynamicAnimator clipAnimator;
         
         [SerializeField] float wanderRadius = 10f;
         [SerializeField] float timeBetweenAttacks = 1f;
-        
+        [SerializeField] float damageToPlayer = 10f;
+
+        [Header("Clip ids (как в DynamicAnimator на этом враге)")]
+        [SerializeField] string animIdleId = "Idle";
+        [SerializeField] string animWalkId = "WalkFWD";
+        [SerializeField] string animRunId = "Run";
+        [SerializeField] string animAttackId = "Attack01";
+        [SerializeField] string animDieId = "Die";
+
+        [Header("Поворот к цели в атаке")]
+        [SerializeField] float attackTurnSpeedDegrees = 720f;
+
+        internal string AnimIdleId => animIdleId;
+        internal string AnimWalkId => animWalkId;
+        internal string AnimRunId => animRunId;
+        internal string AnimAttackId => animAttackId;
+        internal string AnimDieId => animDieId;
+        internal float AttackTurnSpeedDegrees => attackTurnSpeedDegrees;
+
         StateMachine stateMachine;
         
         CountdownTimer attackTimer;
@@ -20,7 +38,8 @@ namespace Platformer {
         void Awake() {
             if (agent == null) agent = GetComponent<NavMeshAgent>();
             if (playerDetector == null) playerDetector = GetComponent<PlayerDetector>();
-            if (animator == null) animator = GetComponentInChildren<Animator>();
+            if (clipAnimator == null)
+                clipAnimator = GetComponent<DynamicAnimator>() ?? GetComponentInChildren<DynamicAnimator>();
         }
 
         void Start() {
@@ -28,9 +47,9 @@ namespace Platformer {
             
             stateMachine = new StateMachine();
             
-            var wanderState = new EnemyWanderState(this, animator, agent, wanderRadius);
-            var chaseState = new EnemyChaseState(this, animator, agent, playerDetector.Player);
-            var attackState = new EnemyAttackState(this, animator, agent, playerDetector.Player);
+            var wanderState = new EnemyWanderState(this, clipAnimator, agent, wanderRadius);
+            var chaseState = new EnemyChaseState(this, clipAnimator, agent, playerDetector.Player);
+            var attackState = new EnemyAttackState(this, clipAnimator, agent, playerDetector.Player);
             
             At(wanderState, chaseState, new FuncPredicate(() => playerDetector.CanDetectPlayer()));
             At(chaseState, wanderState, new FuncPredicate(() => !playerDetector.CanDetectPlayer()));
@@ -53,11 +72,27 @@ namespace Platformer {
         }
         
         public void Attack() {
-            if (attackTimer.IsRunning) return;
-            if (playerDetector.PlayerHealth == null) return;
-            
+            if (attackTimer.IsRunning)
+                return;
+
+            if (!playerDetector.CanAttackPlayer())
+                return;
+
+            if (playerDetector.PlayerHealth != null) {
+                attackTimer.Start();
+                playerDetector.PlayerHealth.TakeDamage(Mathf.RoundToInt(damageToPlayer));
+                return;
+            }
+
+            if (playerDetector.Player == null)
+                return;
+
+            StatComponent playerStats = playerDetector.Player.GetComponent<StatComponent>();
+            if (playerStats == null)
+                return;
+
             attackTimer.Start();
-            playerDetector.PlayerHealth.TakeDamage(10);
+            EventBus.Publish(new StatChangeEvent(playerStats, StatType.HP, -damageToPlayer));
         }
     }
 }

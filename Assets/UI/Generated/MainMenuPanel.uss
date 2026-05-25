@@ -1,30 +1,179 @@
+.root-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background-color: rgba(0, 0, 0, 0.65);
+}
+
 .main-menu-panel {
     position: absolute;
+
     left: 50%;
     top: 50%;
+
     translate: -50% -50%;
-    width: 320px;
-    background-color: rgba(0, 0, 0, 0.85);
-    border-radius: 12px;
-    padding: 32px;
+
+    width: 360px;
+
+    padding-top: 36px;
+    padding-right: 32px;
+    padding-bottom: 32px;
+    padding-left: 32px;
+
+    background-color: rgba(10, 12, 25, 0.92);
+
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+
+    border-top-color: rgba(212, 175, 55, 0.35);
+    border-right-color: rgba(212, 175, 55, 0.35);
+    border-bottom-color: rgba(212, 175, 55, 0.35);
+    border-left-color: rgba(212, 175, 55, 0.35);
+
+    border-radius: 14px;
+
     flex-direction: column;
     align-items: stretch;
 }
 
-.header-label__text {
-    font-size: 28px;
+.game-title {
+    font-size: 35px;
+
     color: #D4AF37;
-    -unity-text-align: upper-center;
-    margin-bottom: 24px;
-}
 
-.stat-bar {
-    margin-bottom: 8px;
-}
-
-.gold-label {
+    -unity-font-style: bold;
     -unity-text-align: middle-center;
-    color: rgba(255, 255, 255, 0.4);
+
+    margin-bottom: 8px;
+
+    letter-spacing: 2px;
+}
+
+.subtitle {
+    color: rgba(255,255,255,0.45);
+
+    font-size: 12px;
+
+    -unity-text-align: middle-center;
+
+    margin-bottom: 28px;
+}
+
+.menu-button {
+    height: 52px;
+
+    margin-bottom: 12px;
+
+    background-color: rgba(255,255,255,0.05);
+
+    color: white;
+
+    font-size: 16px;
+
+    border-radius: 8px;
+
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+
+    border-top-color: rgba(255,255,255,0.08);
+    border-right-color: rgba(255,255,255,0.08);
+    border-bottom-color: rgba(255,255,255,0.08);
+    border-left-color: rgba(255,255,255,0.08);
+
+    -unity-font-style: bold;
+}
+
+.menu-button:hover {
+    background-color: rgba(212, 175, 55, 0.18);
+
+    border-top-color: #D4AF37;
+    border-right-color: #D4AF37;
+    border-bottom-color: #D4AF37;
+    border-left-color: #D4AF37;
+}
+
+.exit-button {
+    margin-top: 8px;
+}
+
+.footer-label {
+    margin-top: 18px;
+
+    color: rgba(255,255,255,0.3);
+
     font-size: 11px;
-    margin-top: 16px;
+
+    -unity-text-align: middle-center;
+}
+
+    .settings-panel {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    translate: -50% -50%;
+
+    width: 420px;
+
+    padding-top: 24px;
+    padding-right: 24px;
+    padding-bottom: 24px;
+    padding-left: 24px;
+
+    background-color: rgba(15, 18, 35, 0.98);
+
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+
+    border-top-color: rgba(212,175,55,0.3);
+    border-right-color: rgba(212,175,55,0.3);
+    border-bottom-color: rgba(212,175,55,0.3);
+    border-left-color: rgba(212,175,55,0.3);
+
+    border-radius: 12px;
+
+    flex-direction: column;
+}
+
+.settings-title {
+    font-size: 24px;
+
+    color: #D4AF37;
+
+    -unity-font-style: bold;
+
+    margin-bottom: 24px;
+
+    -unity-text-align: middle-center;
+}
+
+.settings-label {
+    color: white;
+
+    font-size: 14px;
+
+    margin-bottom: 8px;
+
+    margin-top: 12px;
+}
+
+Slider {
+    margin-bottom: 16px;
+}
+
+Toggle {
+    color: white;
+
+    margin-bottom: 24px;
 }

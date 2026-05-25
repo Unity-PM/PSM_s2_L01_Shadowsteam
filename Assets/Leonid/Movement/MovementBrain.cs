@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
@@ -22,6 +23,7 @@ public class MovementBrain : MonoBehaviour
     public Transform cameraTransform;
     [SerializeField]
     DynamicAnimator dynamicAnimator;
+    [SerializeField] string jumpAnimationStateId = "Jump";
 
     CharacterController controller;
     IMovementInput movementInput;
@@ -39,6 +41,8 @@ public class MovementBrain : MonoBehaviour
     public bool IsAirborne => isAirborne;
     public bool IsGroundedForJump => !inputLocked && !IsMovementLocked && !isAirborne && IsFirmlyGrounded();
     public bool IsMovementLocked => dynamicAnimator != null && dynamicAnimator.IsMovementLocked;
+    public float VerticalVelocityY => verticalVelocity.y;
+    public event Action JumpStarted;
 
     public void SetVerticalVelocity(float val) => verticalVelocity.y = val;
 
@@ -54,6 +58,18 @@ public class MovementBrain : MonoBehaviour
         isAirborne = true;
         jumpHorizontalVelocity = horizontalVelocity;
         SetVerticalVelocity(Mathf.Sqrt(settings.jumpHeight * -2f * settings.gravity));
+        JumpStarted?.Invoke();
+
+        if (dynamicAnimator != null && !string.IsNullOrEmpty(jumpAnimationStateId))
+            dynamicAnimator.ForcePlay(jumpAnimationStateId);
+    }
+
+    void TryProcessJumpInput() {
+        if (inputLocked || jumpModule == null)
+            return;
+
+        if (IsGroundedForJump && jumpModule.CanEnter(this))
+            jumpModule.Process(this);
     }
 
     void Awake()
@@ -63,6 +79,9 @@ public class MovementBrain : MonoBehaviour
 
         if (dynamicAnimator == null)
             dynamicAnimator = GetComponent<DynamicAnimator>() ?? GetComponentInChildren<DynamicAnimator>();
+
+        if (dynamicAnimator != null && GetComponent<PlayerLocomotionAnimator>() == null)
+            gameObject.AddComponent<PlayerLocomotionAnimator>();
 
         if (walkModule == null)
             walkModule = GetComponent<WalkModule>();
@@ -84,6 +103,8 @@ public class MovementBrain : MonoBehaviour
     {
         if (movementInput == null || settings == null)
             return;
+
+        TryProcessJumpInput();
 
         if (IsMovementLocked && !wasMovementLocked)
             StopHorizontalMovement();
@@ -126,9 +147,6 @@ public class MovementBrain : MonoBehaviour
 
     void UpdateActiveModule()
     {
-        if (IsGroundedForJump && jumpModule != null && jumpModule.CanEnter(this))
-            jumpModule.Process(this);
-
         if (isAirborne)
         {
             activeModule = idleModule;
@@ -141,7 +159,9 @@ public class MovementBrain : MonoBehaviour
 
         wasGrounded = true;
 
-        if (runModule != null && runModule.CanEnter(this))
+        if (sprintModule != null && sprintModule.CanEnter(this))
+            activeModule = sprintModule;
+        else if (runModule != null && runModule.CanEnter(this))
             activeModule = runModule;
         else if (walkModule != null && walkModule.CanEnter(this))
             activeModule = walkModule;

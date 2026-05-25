@@ -33,8 +33,8 @@ public class PlayerDeathHandler : MonoBehaviour {
 
     [Header("Optional")]
     [SerializeField] bool publishLegacyGameOverEvent;
-    [SerializeField] UnityEvent onDeathSequenceStarted;
-    [SerializeField] UnityEvent onRespawnCompleted;
+    public UnityEvent onDeathSequenceStarted;
+    public UnityEvent onRespawnCompleted;
 
     Vector3 spawnPositionSnapshot;
     Quaternion spawnRotationSnapshot;

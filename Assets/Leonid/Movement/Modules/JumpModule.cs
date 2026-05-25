@@ -13,8 +13,7 @@ public class JumpModule : MovementModule
         if (stats == null || brain.settings == null)
             return true;
 
-        return !stats.IsStaminaExhausted
-            && stats.getStamina() >= brain.settings.jumpStaminaCost;
+        return stats.getStamina() >= brain.settings.jumpStaminaCost;
     }
 
     public override void Process(MovementBrain brain)
@@ -54,10 +53,28 @@ public class JumpModule : MovementModule
         bool canRun = stats == null
             || (!stats.IsStaminaExhausted && stats.getStamina() > 0f);
 
-        if (brain.Input.IsRunPressed && canRun)
-            return brain.settings.runSpeed;
+        if (!brain.Input.IsRunPressed || !canRun)
+            return brain.settings.walkSpeed;
 
-        return brain.settings.walkSpeed;
+        if (WouldSprint(brain))
+            return brain.settings.sprintSpeed;
+
+        return brain.settings.runSpeed;
+    }
+
+    static bool WouldSprint(MovementBrain brain)
+    {
+        if (brain.Input == null || brain.settings == null || !brain.Input.IsRunPressed)
+            return false;
+
+        if (brain.Input.MoveVector.sqrMagnitude < 0.04f)
+            return false;
+
+        StatComponent stats = brain.GetComponent<StatComponent>();
+        if (stats == null)
+            return true;
+
+        return !stats.IsStaminaExhausted && stats.getStamina() > 0f;
     }
 
     static Vector3 GetDirectionStatic(MovementBrain brain, Vector2 input)

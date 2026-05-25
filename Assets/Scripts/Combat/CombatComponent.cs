@@ -18,6 +18,7 @@ public class CombatComponent : MonoBehaviour {
     [SerializeField] float attackRadius = 0.65f;
     [SerializeField] Transform attackOrigin;
     [SerializeField] StatComponent attackerStats;
+    [SerializeField] PlayerAudioController playerAudio;
 
 #if ENABLE_INPUT_SYSTEM
     [Header("Optional: тот же Input Action, что удара в DynamicAnimator")]
@@ -35,6 +36,9 @@ public class CombatComponent : MonoBehaviour {
 
         if (attackOrigin == null)
             attackOrigin = transform;
+
+        if (playerAudio == null)
+            playerAudio = GetComponent<PlayerAudioController>();
     }
 
     void OnEnable() {
@@ -70,6 +74,7 @@ public class CombatComponent : MonoBehaviour {
             return;
 
         cooldownTimer = attackCooldown;
+        playerAudio?.PlayAttackSwing();
 
         Vector3 forward = attackOrigin.forward;
         forward.y = 0f;
@@ -83,6 +88,7 @@ public class CombatComponent : MonoBehaviour {
 
         Collider[] hits = Physics.OverlapSphere(sphereCenter, attackRadius, ~0, QueryTriggerInteraction.Ignore);
         var dealt = new HashSet<StatComponent>();
+        bool hitEnemy = false;
 
         foreach (Collider col in hits) {
             if (col == null)
@@ -96,7 +102,11 @@ public class CombatComponent : MonoBehaviour {
                 continue;
 
             EventBus.Publish(new StatChangeEvent(targetStats, StatType.HP, -attackDamage));
+            hitEnemy = true;
         }
+
+        if (hitEnemy)
+            playerAudio?.PlayAttackHit();
     }
 
 #if UNITY_EDITOR

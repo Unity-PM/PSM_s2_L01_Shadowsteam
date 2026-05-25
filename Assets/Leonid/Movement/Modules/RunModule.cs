@@ -9,7 +9,7 @@ public class RunModule : MovementModule
         if (brain.Input == null || brain.settings == null)
             return false;
 
-        if (!brain.Input.IsRunPressed || brain.Input.MoveVector.magnitude < 0.1f)
+        if (!brain.Input.IsRunPressed || brain.Input.MoveVector.sqrMagnitude < 0.04f)
             return false;
 
         StatComponent stats = brain.GetComponent<StatComponent>();

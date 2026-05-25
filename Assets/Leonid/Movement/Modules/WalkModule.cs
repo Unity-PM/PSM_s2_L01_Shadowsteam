@@ -5,7 +5,7 @@ public class WalkModule : MovementModule
     public override MovementState State => MovementState.Walking;
 
     public override bool CanEnter(MovementBrain brain) =>
-        brain.Input != null && brain.Input.MoveVector.magnitude > 0.1f;
+        brain.Input != null && brain.Input.MoveVector.sqrMagnitude > 0.04f;
 
     public override void Process(MovementBrain brain)
     {

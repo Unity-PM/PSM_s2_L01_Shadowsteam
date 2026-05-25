@@ -1,5 +1,6 @@
 using UnityEngine.UIElements;
 using UnityEngine;
+using System.Collections;
 
 public class PlayerHUD : MonoBehaviour
 {
@@ -25,7 +26,7 @@ public class PlayerHUD : MonoBehaviour
         _stBar = panel.Q<StatBar>("_stBar");
 
         EventBus.Subscribe<StatUpdatedEvent>(OnStatUpdated);
-        Refresh();
+        StartCoroutine(RefreshNextFrame());
     }
 
     void OnDisable()
@@ -36,6 +37,11 @@ public class PlayerHUD : MonoBehaviour
     void OnStatUpdated(StatUpdatedEvent e)
     {
         if (e.target != _player) return;
+        Refresh();
+    }
+    private IEnumerator RefreshNextFrame()
+    {
+        yield return null;
         Refresh();
     }
 

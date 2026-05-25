@@ -1,0 +1,56 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+
+    <Style src="MainMenu.uss" />
+
+    <ui:VisualElement class="root-overlay">
+
+        <ui:VisualElement class="main-menu-panel">
+
+            <ui:Label text="SHADOWSTREAM"
+                      class="game-title" />
+
+            <ui:Label text="A dark fantasy adventure"
+                      class="subtitle" />
+
+            <ui:Button text="Play"
+                       name="play-btn"
+                       class="menu-button" />
+
+            <ui:Button text="Settings"
+                       name="settings-btn"
+                       class="menu-button" />
+
+            <ui:Button text="Exit"
+                       name="exit-btn"
+                       class="menu-button exit-button" />
+
+            <ui:VisualElement name="settings-panel" class="settings-panel">
+
+            <ui:Label text="Settings"
+                        class="settings-title" />
+
+            <ui:Label text="Master Volume"
+                        class="settings-label" />
+
+            <ui:Slider name="volume-slider"
+                        low-value="0"
+                        high-value="100"
+                        value="80" />
+
+            <ui:Toggle name="fullscreen-toggle"
+                        text="Fullscreen" />
+
+            <ui:Button text="Close"
+                        name="close-settings-btn"
+                        class="menu-button" />
+
+            </ui:VisualElement>
+
+            <ui:Label text="Version 0.1"
+                      class="footer-label" />
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+
+</ui:UXML>

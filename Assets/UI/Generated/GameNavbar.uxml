@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="GameNavbar.uss" />
+    <ui:VisualElement class="game-navbar">
+
+        <ui:Button name="inventory-btn" class="nav-btn">
+            <ui:Label text="⚔" class="nav-icon" />
+            <ui:Label text="Inventory" class="nav-label" />
+        </ui:Button>
+
+        <ui:Button name="character-btn" class="nav-btn">
+            <ui:Label text="👤" class="nav-icon" />
+            <ui:Label text="Character" class="nav-label" />
+        </ui:Button>
+
+        <ui:Button name="quests-btn" class="nav-btn">
+            <ui:Label text="📜" class="nav-icon" />
+            <ui:Label text="Quests" class="nav-label" />
+        </ui:Button>
+
+    </ui:VisualElement>
+</ui:UXML>

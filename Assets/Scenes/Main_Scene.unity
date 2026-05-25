@@ -9859,7 +9859,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IdleModule
   rotationSpeed: 10
-<<<<<<< HEAD
 --- !u!114 &604360249
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9872,8 +9871,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a2f97fd5170c0845bdc8fd68a2f80f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GlideModule
-=======
->>>>>>> a84eab04a76a8e3bb5ec27d5cc8db79f63ead036
 --- !u!114 &604360250
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10479,7 +10476,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7154062880108252924, guid: 4d1546c92cbac6448991a75aaac4259e, type: 3}
   m_PrefabInstance: {fileID: 652830483}
   m_PrefabAsset: {fileID: 0}
-<<<<<<< HEAD
 --- !u!1 &664853166
 GameObject:
   m_ObjectHideFlags: 0
@@ -10524,8 +10520,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-=======
->>>>>>> a84eab04a76a8e3bb5ec27d5cc8db79f63ead036
 --- !u!4 &674775036 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1251796369089889496, guid: 858c489652f3e424f9a2121c85224371, type: 3}
@@ -28882,7 +28876,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4396003489285050686, guid: 8e9f304e02289384cab934f7f371ec97, type: 3}
   m_PrefabInstance: {fileID: 1955580738}
   m_PrefabAsset: {fileID: 0}
-<<<<<<< HEAD
 --- !u!1 &1959164846
 GameObject:
   m_ObjectHideFlags: 0
@@ -28951,8 +28944,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-=======
->>>>>>> a84eab04a76a8e3bb5ec27d5cc8db79f63ead036
 --- !u!1001 &1969674745
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -31667,20 +31658,9 @@ SceneRoots:
   - {fileID: 945546666}
   - {fileID: 1400071941}
   - {fileID: 1458547130}
-<<<<<<< HEAD
   - {fileID: 1959164849}
   - {fileID: 1646789299}
   - {fileID: 1607565203}
   - {fileID: 664853168}
   - {fileID: 1188096458}
   - {fileID: 734898265}
-=======
-  - {fileID: 563249466}
-  - {fileID: 859664181}
-  - {fileID: 1512377783}
-  - {fileID: 2025500652}
-  - {fileID: 1047610159}
-  - {fileID: 1198405263}
-  - {fileID: 1484740684}
-  - {fileID: 190448072}
->>>>>>> a84eab04a76a8e3bb5ec27d5cc8db79f63ead036

@@ -1,0 +1,25 @@
+<ui:UXML
+    xmlns:ui="UnityEngine.UIElements">
+
+    <ui:Style src="EnemyHealthBar.uss"/>
+
+    <ui:VisualElement class="enemy-hp">
+
+        <ui:VisualElement
+            name="hp-bg"
+            class="enemy-hp__bg">
+
+            <ui:VisualElement
+                name="hp-fill"
+                class="enemy-hp__fill"/>
+
+            <ui:Label
+                name="hp-text"
+                text="50/50"
+                class="enemy-hp__text"/>
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+
+</ui:UXML>

@@ -23,3 +23,7 @@ MonoBehaviour:
     value: 10
   - statType: 1
     value: 5
+  - statType: 8
+    value: 50
+  - statType: 8
+    value: 50

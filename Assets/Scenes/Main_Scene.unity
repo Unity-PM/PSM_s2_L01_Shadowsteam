@@ -1169,7 +1169,14 @@ MonoBehaviour:
   uiDocument: {fileID: 1400071939}
   hpBarTemplate: {fileID: 9197481963319205126, guid: fa57524bd5e378048b87a1acd72a66e2, type: 3}
   stats: {fileID: 78926090}
-  worldOffset: {x: 0, y: 2, z: 0}
+  headAnchor: {fileID: 0}
+  localOffset: {x: 0, y: 2, z: 0}
+  useRendererBounds: 0
+  boundsTopPadding: 0.15
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  occlusionRayInset: 0.08
 --- !u!65 &78926099
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -10040,13 +10047,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62da556dec893478a8505aa912dd83dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GlideModule
-  movementBrain: {fileID: 0}
-  dynamicAnimator: {fileID: 0}
-  deathHandler: {fileID: 0}
-  sfxSource: {fileID: 0}
-  jumpClip: {fileID: 0}
-  landClip: {fileID: 0}
-  walkLoopClip: {fileID: 0}
+  movementBrain: {fileID: 604360250}
+  dynamicAnimator: {fileID: 604360252}
+  deathHandler: {fileID: 604360242}
+  sfxSource: {fileID: 604360262}
+  jumpClip: {fileID: 8300000, guid: fd892660c47ef40959fa8f1e8543d5b8, type: 3}
+  landClip: {fileID: 8300000, guid: 4c841986ada6f4efc90b3c1823cf7287, type: 3}
+  walkLoopClip: {fileID: 8300000, guid: 3bc7686f7eb9f45b2941399ef5f12310, type: 3}
   runLoopClip: {fileID: 0}
   runPitchMultiplier: 1.5
   walkFootstepClips: []
@@ -10061,11 +10068,11 @@ MonoBehaviour:
   landLeadTime: 0.12
   landMinFallSpeed: 0.75
   groundProbeDistance: 20
-  attackSwingClip: {fileID: 0}
-  attackHitClip: {fileID: 0}
+  attackSwingClip: {fileID: 8300000, guid: 74d7aa25b83ad43e7b88c5507f35887d, type: 3}
+  attackHitClip: {fileID: 8300000, guid: 74d7aa25b83ad43e7b88c5507f35887d, type: 3}
   attackAnimationStateId: Attack
-  deathClip: {fileID: 0}
-  respawnClip: {fileID: 0}
+  deathClip: {fileID: 8300000, guid: e60208f349e754f9b83d1d999471e115, type: 3}
+  respawnClip: {fileID: 8300000, guid: fd892660c47ef40959fa8f1e8543d5b8, type: 3}
   masterVolume: 1
   footstepVolume: 0.55
   actionVolume: 0.85
@@ -11762,182 +11769,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89cfaaab36f0bc64d8a54adcd8cbd5a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::D.DRigid
-  initialization: 1
-  simulationType: 1
-  objectType: 0
-  demolitionType: 1
-  physics:
-    mt: 2
-    material: {fileID: 0}
-    massBy: 1
-    mass: 1
-    ct: 0
-    pc: 1
-    ine: 0
-    gr: 1
-    si: 6
-    st: 0.005
-    dm: 0.7
-    rigidBody: {fileID: 0}
-    meshCollider: {fileID: 0}
-    clusterColliders: []
-    ignoreList: 
-    exclude: 0
-    solidity: 1
-    destructible: 0
-  activation:
-    loc: 0
-    off: 0
-    vel: 0
-    dmg: 0
-    act: 0
-    imp: 0
-    con: 0
-    uny: 0
-    atb: 0
-    l: 0
-    lay: 0
-    cnt: {fileID: 0}
-  limitations:
-    col: 1
-    sol: 0.1
-    tag: Untagged
-    depth: 1
-    time: 0.2
-    size: 0.1
-    vis: 0
-    bld: 1
-    bound:
-      m_Center: {x: 0, y: 0, z: 0}
-      m_Extent: {x: 0, y: 0, z: 0}
-  meshDemolition:
-    am: 195
-    var: 100
-    dpf: 0.41
-    bias: 0.4
-    sd: 10
-    use: 0
-    cld: 1
-    cls: 0
-    sim: 4
-    inp: 9
-    prp:
-      col: 0
-      szF: 0
-      dec: 0
-      rem: 1
-      l: 1
-      lay: 0
-      t: 1
-      tag: 
-    ch:
-      tp: 0
-      frm: 3
-      frg: 4
-      skp: 0
-    sht: {fileID: 0}
-    rotStart: {x: 0, y: 0, z: 0, w: 1}
-  clusterDemolition:
-    connectivity: 3
-    minimumArea: 0.203
-    minimumSize: 3.01
-    percentage: 43
-    seed: 17
-    type: 3
-    ratio: 15
-    units: 1
-    shardArea: 100
-    shardDemolition: 1
-    minAmount: 3
-    maxAmount: 6
-    demolishable: 1
-    collapse:
-      type: 1
-      start: 0
-      end: 75
-      steps: 10
-      duration: 15
-      var: 0
-      seed: 0
-    clsCount: 1
-    cluster:
-      id: -1
-      tm: {fileID: 0}
-      depth: 0
-      pos: {x: 0, y: 0, z: 0}
-      rot: {x: 0, y: 0, z: 0, w: 0}
-      scl: {x: 0, y: 0, z: 0}
-      bound:
-        m_Center: {x: 0, y: 0, z: 0}
-        m_Extent: {x: 0, y: 0, z: 0}
-      demolishable: 1
-      rigid: {fileID: 0}
-      shards: []
-      cachedHost: 0
-      areaCollapse: 0
-      minimumArea: 0
-      maximumArea: 0
-      sizeCollapse: 0
-      minimumSize: 0
-      maximumSize: 0
-      randomCollapse: 0
-    minorClusters: []
-    cn: 0
-    nd: 0
-    am: 0
-  referenceDemolition:
-    reference: {fileID: 0}
-    randomList: []
-    action: 0
-    addRigid: 1
-    inheritScale: 1
-    inheritMaterials: 0
-  materials:
-    iMat: {fileID: 0}
-    oMat: {fileID: 0}
-    mScl: 0.1
-    uvE: 0
-    uvC: {x: 0, y: 0}
-    cE: 0
-    cC: {r: 0, g: 0, b: 0, a: 0}
-  damage:
-    en: 0
-    max: 100
-    cur: 0
-    col: 0
-    mlt: 1
-    shr: 0
-  fading:
-    onDemolition: 1
-    onActivation: 1
-    byOffset: 0
-    lifeType: 4
-    lifeTime: 0.1
-    lifeVariation: 3
-    fadeType: 3
-    fadeTime: 1
-    sizeFilter: 0
-    shardAmount: 5
-  reset:
-    transform: 1
-    damage: 1
-    connectivity: 0
-    action: 1
-    destroyDelay: 1
-    mesh: 4
-    fragments: 0
-  initialized: 0
-  rfMeshes: []
-  fragments: []
-  cacheRotation: {x: 0, y: 0, z: 0, w: 0}
-  transForm: {fileID: 0}
-  rootChild: {fileID: 0}
-  rootParent: {fileID: 0}
-  meshFilter: {fileID: 0}
-  meshRenderer: {fileID: 0}
-  skr: {fileID: 0}
-  rest: {fileID: 0}
-  sound: {fileID: 0}
 --- !u!1001 &817843802
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -16142,22 +15973,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5870af6495b1c3145ab74b4cfcc0b5fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::D.DBlade
-  actionType: 1
-  onTrigger: 1
-  sliceType: 1
-  force: 4.19
-  affectInactive: 0
-  damage: 0.01
-  skin: 0
-  cooldown: 0
-  mask: -1
-  tagFilter: Untagged
-  targets: []
-  rigid: {fileID: 0}
-  transForm: {fileID: 0}
-  enterPlane: []
-  exitPlane: []
-  colLider: {fileID: 0}
 --- !u!1001 &1140379068
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -19595,6 +19410,7 @@ Transform:
   - {fileID: 1198405263}
   - {fileID: 1484740684}
   - {fileID: 1400071941}
+  - {fileID: 2101000002}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1326033584
@@ -22353,6 +22169,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1512377783}
   - component: {fileID: 1512377782}
+  - component: {fileID: 2101000010}
   m_Layer: 0
   m_Name: UIManager
   m_TagString: Untagged
@@ -30696,6 +30513,87 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4396003489285050686, guid: 8e9f304e02289384cab934f7f371ec97, type: 3}
   m_PrefabInstance: {fileID: 1623497289}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2101000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2101000002}
+  - component: {fileID: 2101000003}
+  - component: {fileID: 2101000004}
+  m_Layer: 0
+  m_Name: CrosshairUI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2101000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2101000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1324732794}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2101000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2101000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: 80ecbeab31e65f64bb97cb5fcae7043a, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: 1e2f34a5b6c7d8e9f0a1b2c3d4e5f6a7, type: 3}
+  m_SortingOrder: 10
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
+--- !u!114 &2101000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2101000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d1e2f34a5b6c7d8e9f0a1b2c3d4e5f6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CrosshairController
+--- !u!114 &2101000010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1512377781}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b9c0d1e2f34a5b6c7d8e9f0a1b2c3d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameplayHudVisibilityInput
+  toggleKey: 122
 --- !u!1001 &2107937562
 PrefabInstance:
   m_ObjectHideFlags: 0

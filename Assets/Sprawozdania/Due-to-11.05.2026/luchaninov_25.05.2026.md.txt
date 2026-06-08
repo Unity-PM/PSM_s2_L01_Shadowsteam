@@ -1,0 +1,25 @@
+Sprawozdanie – Shadowsteam
+Zajęcia: 2026-04-27
+Autor: Mykyta Luchaninov
+
+Co zrobiłem/am
+
+Zaprojektowałem i zaimplementowałem rozbudowany, rozszerzalny system UI dla gry RPG oparty na Unity UI Toolkit. System został zbudowany warstwowo — UXML definiuje strukturę, USS odpowiada za stylizację, a C# obsługuje logikę bez ingerencji w layout.
+Stworzyłem bazową klasę UIWidget jako VisualElement z atrybutem [UIWidget] umożliwiającym automatyczną rejestrację komponentów przez refleksję w klasie ComponentRegistry. Dzięki temu każdy nowy widget jest natychmiast dostępny w systemie bez ręcznej rejestracji.
+Zaprojektowałem i wdrożyłem UIFactory — fabrykę UI czytającą dane z PanelDefinitionSO (ScriptableObject) i budującą drzewo elementów w czasie rzeczywistym. System obsługuje zagnieżdżone kontenery (children) co umożliwia budowanie złożonych layoutów dwukolumnowych bez pisania kodu layoutu.
+Zaimplementowałem pierwszy własny widget StatBar — reużywalny pasek statystyk z etykietą, wypełnieniem animowanym przez USS transitions oraz nakładką tekstową pokazującą wartości aktualny / maksymalny. Widget implementuje interfejs IConfigurable i jest konfigurowalny przez dane SO.
+Podłączyłem system UI do istniejącego StatComponent i EventBus — PlayerHUD subskrybuje StatUpdatedEvent i odświeża paski HP, MP i Staminy w czasie rzeczywistym bez pollingu w Update(). Naprawiono błąd w EventBus.Unsubscribe polegający na tym że lambda wrapper nie był prawidłowo usuwany.
+
+
+Problemy / blokery
+
+Napotkałem problem z NullReferenceException w PlayerHUD.Refresh() spowodowany tym że StatComponent.Start() inicjalizuje wartości statystyk po OnEnable() komponentu UI — paski pokazywały 0 przy starcie. Rozwiązałem to przez opóźnienie pierwszego Refresh() o jedną klatkę przy użyciu coroutine RefreshNextFrame().
+Wystąpił problem z ładowaniem USS — plik stylów nie był odnajdywany gdy ścieżka w <Style src="..."/> była niepoprawna lub gdy tag <Style> był umieszczony wewnątrz elementu root zamiast jako pierwsze dziecko <ui:UXML>. Rozwiązano przez przeniesienie tagu na właściwą pozycję i użycie poprawnych ścieżek relatywnych.
+Problem z serializacją WidgetConfig — pole Color powodowało przekroczenie limitu głębokości serializacji Unity (depth limit 10) przy zagnieżdżonych children. Rozwiązano przez zastąpienie pola Color color polem string colorHex i parsowanie go przez ColorUtility.TryParseHtmlString.
+
+
+Plan na kolejne zajęcia
+
+Budowa systemu nawigacji UI — stworzenie UIManager jako singletona koordynującego widoczność paneli oraz GameNavbar z przyciskami do otwierania kolejnych ekranów.
+Implementacja panelu ekwipunku (Inventory) z siatką slotów na przedmioty, podglądem szczegółów oraz przyciskiem zakładania ekwipunku.
+Implementacja panelu postaci (Character Screen) pokazującego statystyki z StatComponent oraz założone przedmioty z EquipmentComponent.

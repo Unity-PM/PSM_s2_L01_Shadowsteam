@@ -42,4 +42,24 @@ public class InventoryComponent : MonoBehaviour
         if (_items.Remove(item))
             EventBus.Publish(new InventoryUpdatedEvent(this));
     }
+
+    public bool TryUseItem(ItemSO item)
+    {
+        if (item == null || item.itemType != ItemType.Consumable)
+            return false;
+
+        if (!_items.Contains(item))
+            return false;
+
+        if (item.useAmount != 0f)
+        {
+            StatComponent stats = GetComponent<StatComponent>();
+            if (stats != null)
+                EventBus.Publish(new StatChangeEvent(stats, item.useStatType, item.useAmount));
+        }
+
+        RemoveItem(item);
+        Debug.Log($"[Inventory] used: {item.itemName}");
+        return true;
+    }
 }

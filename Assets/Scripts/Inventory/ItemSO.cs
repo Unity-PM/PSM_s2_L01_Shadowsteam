@@ -16,4 +16,8 @@ public class ItemSO : ScriptableObject
 
     public Sprite icon;
     public ItemType itemType;
+
+    [Header("Consumable")]
+    public StatType useStatType = StatType.HP;
+    public float useAmount;
 }

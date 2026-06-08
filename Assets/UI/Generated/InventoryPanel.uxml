@@ -7,47 +7,28 @@
             <ui:VisualElement class="left-column">
                 <ui:Label text="Inventory" class="header-label" />
 
-                <ui:ScrollView class="item-grid" mode="Vertical">
-                    <ui:VisualElement class="item-slot selected">
-                        <ui:VisualElement class="slot-icon" />
-                        <ui:Label text="Iron Sword" class="slot-name" />
-                    </ui:VisualElement>
-
-                    <ui:VisualElement class="item-slot">
-                        <ui:VisualElement class="slot-icon" />
-                        <ui:Label text="Health Potion" class="slot-name" />
-                    </ui:VisualElement>
-                </ui:ScrollView>
+                <ui:ScrollView class="item-grid" mode="Vertical" />
             </ui:VisualElement>
 
             <ui:VisualElement class="right-column">
-                <ui:Label name="detail-name" text="Iron Sword" class="item-name" />
+                <ui:Label name="detail-name" text="Select an item" class="item-name" />
 
-                <ui:Label name="detail-type" text="Weapon" class="item-type" />
+                <ui:Label name="detail-type" text="" class="item-type" />
 
                 <ui:VisualElement class="divider" />
 
                 <ui:Label
                     name="detail-description"
-                    text="A standard iron sword used by beginner adventurers."
+                    text=""
                     class="item-description"
                 />
 
                 <ui:VisualElement class="spacer" />
 
-                <ui:VisualElement name="stat-preview" class="stat-preview">
-                    <ui:VisualElement class="stat-row">
-                        <ui:Label text="Attack" class="stat-name" />
-                        <ui:Label text="+15" class="stat-value" />
-                    </ui:VisualElement>
+                <ui:VisualElement name="stat-preview" class="stat-preview" />
 
-                    <ui:VisualElement class="stat-row">
-                        <ui:Label text="Crit Rate" class="stat-name" />
-                        <ui:Label text="+5%" class="stat-value" />
-                    </ui:VisualElement>
-                </ui:VisualElement>
-
-                <ui:Button name="equip-btn" text="Equip Item" class="equip-btn" />
+                <ui:Button name="equip-btn" text="Equip" class="action-btn equip-btn" />
+                <ui:Button name="use-btn" text="Use" class="action-btn use-btn" />
             </ui:VisualElement>
 
             <ui:Button name="close-btn" text="✕" class="close-btn" />

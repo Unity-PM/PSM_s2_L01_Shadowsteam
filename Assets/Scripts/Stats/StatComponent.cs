@@ -151,11 +151,43 @@ public class StatComponent : MonoBehaviour
         EventBus.Publish(new StatUpdatedEvent(this));
     }
 
-    private float getModifier(StatType type)
+    public float GetBaseStat(StatType type)
+    {
+        if (baseStatsTemplate == null)
+            return 0f;
+
+        return type switch
+        {
+            StatType.HP => baseStatsTemplate.MaxHP,
+            StatType.MP => baseStatsTemplate.MaxMP,
+            StatType.Stamina => baseStatsTemplate.MaxStamina,
+            StatType.HPRegen => baseStatsTemplate.HPRegen,
+            StatType.MPRegen => baseStatsTemplate.MPRegen,
+            StatType.StaminaRegen => baseStatsTemplate.StaminaRegen,
+            StatType.ATK => baseStatsTemplate.ATK,
+            StatType.MAG => baseStatsTemplate.MAG,
+            StatType.DEF => baseStatsTemplate.DEF,
+            StatType.MDEF => baseStatsTemplate.MDEF,
+            StatType.CritChance => baseStatsTemplate.CritChance,
+            StatType.CritDamage => baseStatsTemplate.CritDamage,
+            StatType.MS => baseStatsTemplate.MS,
+            StatType.AS => baseStatsTemplate.AS,
+            StatType.DodgeChance => baseStatsTemplate.DodgeChance,
+            StatType.BlockChance => baseStatsTemplate.BlockChance,
+            StatType.CooldownReduction => baseStatsTemplate.CooldownReduction,
+            _ => 0f
+        };
+    }
+
+    public float GetStatModifier(StatType type)
     {
         EnsureModifiersInitialized();
-        return modifiers.ContainsKey(type) ? modifiers[type] : 0f;
+        return modifiers.TryGetValue(type, out float value) ? value : 0f;
     }
+
+    public float GetEffectiveStat(StatType type) => GetBaseStat(type) + GetStatModifier(type);
+
+    private float getModifier(StatType type) => GetStatModifier(type);
 
     public PlayerStatsData ExportStatsForSave()
     {

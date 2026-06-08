@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class ThirdPersonCamera : MonoBehaviour
 {
@@ -8,6 +9,12 @@ public class ThirdPersonCamera : MonoBehaviour
     private float _yaw, _pitch;
 
     void Start() { Cursor.lockState = CursorLockMode.Locked; }
+
+    void Update()
+    {
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            UIManager.UnlockCursorForUi();
+    }
 
     void LateUpdate()
     {

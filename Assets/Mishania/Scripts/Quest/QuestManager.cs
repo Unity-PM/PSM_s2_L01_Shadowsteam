@@ -45,7 +45,18 @@ namespace Platformer {
                 PersistProgress();
         }
 
-        internal IReadOnlyList<QuestRuntimeState> ActiveQuests => activeQuests;
+        public IReadOnlyList<QuestRuntimeState> ActiveQuests => activeQuests;
+
+        public event Action QuestJournalChanged;
+
+        public bool TryGetQuestDefinition(string questId, out QuestDefinition definition) =>
+            questById.TryGetValue(questId, out definition);
+
+        public void CopyCompletedQuestIds(List<string> destination) {
+            destination.Clear();
+            foreach (string id in completedQuestIds)
+                destination.Add(id);
+        }
 
         internal bool IsQuestCompleted(string questId) =>
             !string.IsNullOrEmpty(questId) && completedQuestIds.Contains(questId);
@@ -81,6 +92,7 @@ namespace Platformer {
             var progress = new int[n];
             activeQuests.Add(new QuestRuntimeState(definition, progress));
             PersistProgress();
+            QuestJournalChanged?.Invoke();
             return true;
         }
 
@@ -274,6 +286,7 @@ namespace Platformer {
             if (changed) {
                 ResolveCompletedQuests();
                 PersistProgress();
+                QuestJournalChanged?.Invoke();
             }
         }
 
@@ -299,6 +312,7 @@ namespace Platformer {
                 TryStartQuest(nextId, category);
 
             PersistProgress();
+            QuestJournalChanged?.Invoke();
         }
 
         static bool IsQuestFullyComplete(QuestRuntimeState state) {

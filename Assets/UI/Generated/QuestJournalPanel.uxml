@@ -1,0 +1,27 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="QuestJournalPanel.uss" />
+
+    <ui:VisualElement name="QuestJournalPanel" class="quest-journal-panel">
+        <ui:VisualElement class="inner-panel">
+
+            <ui:VisualElement class="left-column">
+                <ui:Label text="Quest Journal" class="header-label" />
+                <ui:ScrollView name="quest-list" class="quest-list" mode="Vertical" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="right-column">
+                <ui:Label name="detail-title" text="Select a quest" class="quest-title" />
+                <ui:Label name="detail-status" text="" class="quest-status" />
+                <ui:Label name="detail-category" text="" class="quest-category" />
+                <ui:VisualElement class="divider" />
+                <ui:Label name="detail-description" text="" class="quest-description" />
+                <ui:Label text="Objectives" class="section-label" />
+                <ui:ScrollView name="objectives-list" class="objectives-list" mode="Vertical" />
+                <ui:VisualElement class="spacer" />
+                <ui:Label name="detail-reward" text="" class="quest-reward" />
+            </ui:VisualElement>
+
+            <ui:Button name="close-btn" text="✕" class="close-btn" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

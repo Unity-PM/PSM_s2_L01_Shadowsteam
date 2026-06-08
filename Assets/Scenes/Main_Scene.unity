@@ -17561,6 +17561,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1198405263}
+  - component: {fileID: 1198405265}
+  - component: {fileID: 1198405264}
   m_Layer: 0
   m_Name: QuestJournalUI
   m_TagString: Untagged
@@ -17583,6 +17585,42 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1324732794}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1198405264
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1198405262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f3e2a1b4c5d6e7f901234567890abcd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QuestJournalPanel
+  questManager: {fileID: 0}
+--- !u!114 &1198405265
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1198405262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: 80ecbeab31e65f64bb97cb5fcae7043a, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: 1a2b3c4d5e6f7890abcdef1234567890, type: 3}
+  m_SortingOrder: 10
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
 --- !u!4 &1201267228 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4396003489285050686, guid: 8e9f304e02289384cab934f7f371ec97, type: 3}
@@ -21897,6 +21935,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1484740684}
+  - component: {fileID: 1484740686}
+  - component: {fileID: 1484740685}
   m_Layer: 0
   m_Name: CharacterUI
   m_TagString: Untagged
@@ -21919,6 +21959,42 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1324732794}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1484740685
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1484740683}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1c2d3e4f5a6789012345678abcdef01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterPanel
+  playerStats: {fileID: 0}
+--- !u!114 &1484740686
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1484740683}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: 80ecbeab31e65f64bb97cb5fcae7043a, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: c2d3e4f5a6b789012345678abcdef0123, type: 3}
+  m_SortingOrder: 10
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
 --- !u!1001 &1493004300
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -22170,6 +22246,7 @@ GameObject:
   - component: {fileID: 1512377783}
   - component: {fileID: 1512377782}
   - component: {fileID: 2101000010}
+  - component: {fileID: 2101000011}
   m_Layer: 0
   m_Name: UIManager
   m_TagString: Untagged
@@ -29719,7 +29796,7 @@ MonoBehaviour:
   m_PanelSettings: {fileID: 11400000, guid: 80ecbeab31e65f64bb97cb5fcae7043a, type: 2}
   m_ParentUI: {fileID: 0}
   sourceAsset: {fileID: 9197481963319205126, guid: 744e1196dc8613943bc8b863fc4b84f3, type: 3}
-  m_SortingOrder: 0
+  m_SortingOrder: 15
   m_Position: 0
   m_WorldSpaceSizeMode: 1
   m_WorldSpaceWidth: 1920
@@ -30594,6 +30671,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameplayHudVisibilityInput
   toggleKey: 122
+--- !u!114 &2101000011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1512377781}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4e5f6a7b8c9d0e1f2a3b4c5d6e7f809, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QuestJournalInput
+  toggleKey: 36
 --- !u!1001 &2107937562
 PrefabInstance:
   m_ObjectHideFlags: 0

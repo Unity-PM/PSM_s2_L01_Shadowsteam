@@ -41,6 +41,7 @@
     font-size: 18px;
     color: rgba(255, 255, 255, 0.9);
     -unity-text-align: middle-center;
+    picking-mode: ignore;
 }
 
 .nav-btn:hover .nav-icon {
@@ -51,4 +52,5 @@
     font-size: 9px;
     color: rgba(255, 255, 255, 0.6);
     -unity-text-align: middle-center;
+    picking-mode: ignore;
 }

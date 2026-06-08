@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -50,25 +52,69 @@ public class CharacterPanel : MonoBehaviour
 	};
 	#endregion
 
-	#region Lifecycle
-	void Awake()
+	#region Debug
+	// #region agent log
+	const string DebugLogPath = "/Users/misakostenko/Desktop/Politechnika/Unity/PSM_s2_L01_Shadowsteam/.cursor/debug-34eaa1.log";
+
+	static void AgentLog(string hypothesisId, string location, string message, string dataJson)
 	{
-		uiDocument = GetComponent<UIDocument>();
+		try
+		{
+			var line = $"{{\"sessionId\":\"34eaa1\",\"hypothesisId\":\"{hypothesisId}\",\"location\":\"{location}\",\"message\":\"{message}\",\"data\":{dataJson},\"timestamp\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}\n";
+			File.AppendAllText(DebugLogPath, line);
+		}
+		catch { }
 	}
 
+	static string JoinChildNames(VisualElement root)
+	{
+		if (root == null)
+			return "null";
+
+		var sb = new StringBuilder();
+		for (int i = 0; i < root.childCount; i++)
+		{
+			if (i > 0)
+				sb.Append(',');
+
+			var child = root[i];
+			sb.Append(string.IsNullOrEmpty(child.name) ? child.GetType().Name : child.name);
+		}
+
+		return sb.ToString();
+	}
+	// #endregion
+	#endregion
+
+	#region Lifecycle
 	void OnEnable()
 	{
-		UnbindButtons();
 		EventBus.Subscribe<StatUpdatedEvent>(OnStatUpdated);
 
+		if (uiDocument == null)
+			uiDocument = GetComponent<UIDocument>();
+
 		var root = uiDocument != null ? uiDocument.rootVisualElement : null;
+		var vta = uiDocument != null ? uiDocument.visualTreeAsset : null;
+
+		// #region agent log
+		AgentLog("H-A", "CharacterPanel.OnEnable", "enable",
+			$"{{\"vtaNull\":{(vta == null).ToString().ToLower()},\"vtaName\":\"{(vta != null ? vta.name : "null")}\",\"rootNull\":{(root == null).ToString().ToLower()},\"rootChildCount\":{(root != null ? root.childCount : -1)}}}");
+		// #endregion
+
 		if (root == null)
 		{
-			uiDocument?.rootVisualElement?.schedule.Execute(BindUi).ExecuteLater(0);
+			// #region agent log
+			AgentLog("H-B", "CharacterPanel.OnEnable", "root null immediate bind", "{}");
+			// #endregion
+			TryBindUi();
 			return;
 		}
 
-		root.schedule.Execute(BindUi).ExecuteLater(0);
+		// #region agent log
+		AgentLog("H-B", "CharacterPanel.OnEnable", "deferred bind scheduled", "{}");
+		// #endregion
+		root.schedule.Execute(TryBindUi).ExecuteLater(0);
 	}
 
 	void OnDisable()
@@ -82,7 +128,7 @@ public class CharacterPanel : MonoBehaviour
 		if (playerStats == null)
 			ResolvePlayerStats();
 
-		if (playerStats != null && e.target != playerStats)
+		if (playerStats == null || e.target != playerStats)
 			return;
 
 		if (isActiveAndEnabled)
@@ -91,7 +137,7 @@ public class CharacterPanel : MonoBehaviour
 	#endregion
 
 	#region Binding
-	void BindUi()
+	void TryBindUi()
 	{
 		UnbindButtons();
 
@@ -100,18 +146,31 @@ public class CharacterPanel : MonoBehaviour
 
 		var root = uiDocument != null ? uiDocument.rootVisualElement : null;
 		if (root == null)
+		{
+			Debug.LogWarning("[CharacterPanel] rootVisualElement null (UIDocument not ready?).", this);
 			return;
+		}
 
 		statsList = root.Q<VisualElement>("stats-list");
 		closeBtn = root.Q<Button>("close-btn");
+
+		// #region agent log
+		AgentLog("H-C", "CharacterPanel.TryBindUi", "bind result",
+			$"{{\"vtaNull\":{(uiDocument.visualTreeAsset == null).ToString().ToLower()},\"vtaName\":\"{(uiDocument.visualTreeAsset != null ? uiDocument.visualTreeAsset.name : "null")}\",\"rootChildCount\":{root.childCount},\"childNames\":\"{JoinChildNames(root)}\",\"statsListFound\":{(statsList != null).ToString().ToLower()},\"closeBtnFound\":{(closeBtn != null).ToString().ToLower()}}}");
+		// #endregion
+
+		if (statsList == null)
+			Debug.LogWarning("[CharacterPanel] stats-list not found in UXML.", this);
 
 		if (closeBtn == null)
 			Debug.LogWarning("[CharacterPanel] close-btn not found in UXML.", this);
 		else
 			BindButton(closeBtn, OnCloseBtnClicked, ref closeClickCallback);
 
+		if (statsList != null && isActiveAndEnabled)
+			Refresh();
+
 		ResolvePlayerStats();
-		Refresh();
 	}
 
 	static void BindButton(Button button, Action handler, ref EventCallback<ClickEvent> clickCallback)
@@ -133,8 +192,19 @@ public class CharacterPanel : MonoBehaviour
 
 	void ResolvePlayerStats()
 	{
-		if (playerStats == null)
-			playerStats = FindFirstObjectByType<StatComponent>();
+		if (playerStats != null)
+			return;
+
+		var playerGo = GameObject.FindGameObjectWithTag("Player");
+		if (playerGo != null && playerGo.TryGetComponent(out StatComponent stats))
+		{
+			playerStats = stats;
+			return;
+		}
+
+		var skillInput = FindFirstObjectByType<PlayerSkillInput>();
+		if (skillInput != null && skillInput.TryGetComponent(out stats))
+			playerStats = stats;
 	}
 	#endregion
 
@@ -154,9 +224,14 @@ public class CharacterPanel : MonoBehaviour
 	#region Data
 	public void Refresh()
 	{
+		// #region agent log
+		AgentLog("H-B", "CharacterPanel.Refresh", "refresh called",
+			$"{{\"statsListNull\":{(statsList == null).ToString().ToLower()}}}");
+		// #endregion
+
 		if (statsList == null)
 		{
-			BindUi();
+			TryBindUi();
 			if (statsList == null)
 				return;
 		}

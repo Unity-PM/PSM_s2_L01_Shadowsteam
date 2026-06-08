@@ -1,45 +1,58 @@
 ﻿using System.Collections;
 using UnityEngine;
-using UnityEngine.Serialization;
-using UnityEngine.UIElements;
+using UnityEngine.UI;
+using TMPro;
 
 public class EnemyHealthBar : MonoBehaviour
 {
-    [SerializeField] private UIDocument uiDocument;
-    [SerializeField] private VisualTreeAsset hpBarTemplate;
+    [Header("UI References")]
+    [SerializeField] private Canvas worldCanvas;
+    [SerializeField] private Image hpFillImage;
+    [SerializeField] private TextMeshProUGUI hpText;
+
+    [Header("Stats")]
     [SerializeField] private StatComponent stats;
 
     [Header("Anchor")]
     [SerializeField] private Transform headAnchor;
-    [FormerlySerializedAs("worldOffset")]
-    [SerializeField] private Vector3 localOffset = new Vector3(0f, 2f, 0f);
-    [SerializeField] private bool useRendererBounds;
+    [SerializeField] private Vector3 localOffset = new Vector3(0f, 2.2f, 0f);
+    [SerializeField] private bool useRendererBounds = false;
     [SerializeField] private float boundsTopPadding = 0.15f;
 
-    [Header("Visibility")]
+    [Header("Distance Scaling")]
+    [SerializeField] private float referenceDistance = 5f;
+    [SerializeField] private float minScale = 0.4f;
+    [SerializeField] private float maxScale = 2.0f;
+
+    [Header("Fade")]
+    [SerializeField] private float fadeStartDistance = 14f;
+    [SerializeField] private float fadeEndDistance = 20f;
+
+    [Header("Auto-hide")]
+    [SerializeField] private float visibleDuration = 3f;
+
+    [Header("Occlusion")]
     [SerializeField] private LayerMask occlusionMask = Physics.DefaultRaycastLayers;
     [SerializeField] private float occlusionRayInset = 0.08f;
 
     private Camera cam;
     private Transform enemyRoot;
     private Renderer[] renderers;
+    private CanvasGroup canvasGroup;
 
-    private TemplateContainer root;
+    private float lastDamageTime = float.NegativeInfinity;
+    private bool isFullHealth = true;
+    private bool hasBeenDamaged;
 
-    private VisualElement hpFill;
-    private Label hpText;
-
-    private const float BAR_WIDTH = 90f;
-    private const float BAR_HEIGHT = 18f;
-
-    private void OnEnable()
+    private void Awake()
     {
-        Application.onBeforeRender += OnBeforeRender;
-    }
+        canvasGroup = worldCanvas.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+            canvasGroup = worldCanvas.gameObject.AddComponent<CanvasGroup>();
 
-    private void OnDisable()
-    {
-        Application.onBeforeRender -= OnBeforeRender;
+        canvasGroup.interactable = false;
+        canvasGroup.blocksRaycasts = false;
+        HideImmediate();
     }
 
     private void Start()
@@ -48,75 +61,101 @@ public class EnemyHealthBar : MonoBehaviour
         enemyRoot = transform;
         renderers = GetComponentsInChildren<Renderer>();
 
-        root = hpBarTemplate.Instantiate();
-        root.style.position = Position.Absolute;
-        root.style.width = BAR_WIDTH;
-        root.style.height = BAR_HEIGHT;
-        root.pickingMode = PickingMode.Ignore;
-        uiDocument.rootVisualElement.Add(root);
+        if (stats == null)
+            stats = GetComponentInParent<StatComponent>() ?? GetComponentInChildren<StatComponent>();
 
-        hpFill = root.Q<VisualElement>("hp-fill");
-        hpText = root.Q<Label>("hp-text");
+        worldCanvas.renderMode = RenderMode.WorldSpace;
+        worldCanvas.worldCamera = cam;
 
-        Refresh();
-
+        UpdateCanvasPosition();
         EventBus.Subscribe<StatUpdatedEvent>(OnStatUpdated);
+        StartCoroutine(InitRefreshRoutine());
+    }
 
-        StartCoroutine(RefreshNextFrame());
+    private IEnumerator InitRefreshRoutine()
+    {
+        yield return null;
+        Refresh();
     }
 
     private void OnDestroy()
     {
         EventBus.Unsubscribe<StatUpdatedEvent>(OnStatUpdated);
-
-        root?.RemoveFromHierarchy();
     }
 
-    private void OnBeforeRender()
+    private void LateUpdate()
     {
-        UpdateBarPosition();
+        UpdateCanvasPosition();
+        UpdateVisibility();
     }
 
-    private void UpdateBarPosition()
+    private void UpdateCanvasPosition()
     {
-        if (cam == null)
-            cam = Camera.main;
-
-        if (cam == null || root == null || root.panel == null || stats == null)
-            return;
-
-        if (stats.IsDead)
-        {
-            HideBar();
-            return;
-        }
-
         Vector3 worldPos = GetAnchorWorldPosition();
+        worldCanvas.transform.position = worldPos;
 
-        if (!IsVisibleFromCamera(worldPos))
+        if (cam != null)
         {
-            HideBar();
+            Vector3 dir = worldPos - cam.transform.position;
+            if (dir != Vector3.zero)
+                worldCanvas.transform.rotation = Quaternion.LookRotation(dir);
+        }
+
+        if (cam != null)
+        {
+            float dist = Vector3.Distance(cam.transform.position, worldPos);
+            float scale = Mathf.Clamp(dist / referenceDistance, minScale, maxScale);
+            worldCanvas.transform.localScale = Vector3.one * scale;
+        }
+    }
+
+    private void UpdateVisibility()
+    {
+        if (cam == null) { HideImmediate(); return; }
+        if (stats == null || stats.IsDead) { HideImmediate(); return; }
+        if (isFullHealth && hasBeenDamaged && Time.time - lastDamageTime > visibleDuration)
+        {
+            HideImmediate();
             return;
         }
 
-        Vector3 viewportPos = cam.WorldToViewportPoint(worldPos);
-        if (viewportPos.z <= 0f
-            || viewportPos.x < 0f || viewportPos.x > 1f
-            || viewportPos.y < 0f || viewportPos.y > 1f)
-        {
-            HideBar();
-            return;
-        }
+        Vector3 worldPos = worldCanvas.transform.position;
 
-        VisualElement panelRoot = root.panel.visualTree;
-        float panelWidth = panelRoot.layout.width;
-        float panelHeight = panelRoot.layout.height;
-        if (panelWidth <= 0f || panelHeight <= 0f)
-            return;
+        Vector3 toTarget = worldPos - cam.transform.position;
+        if (Vector3.Dot(cam.transform.forward, toTarget) <= 0f) { HideImmediate(); return; }
 
-        root.style.visibility = Visibility.Visible;
-        root.style.left = viewportPos.x * panelWidth - BAR_WIDTH * 0.5f;
-        root.style.top = (1f - viewportPos.y) * panelHeight - BAR_HEIGHT * 0.5f;
+        if (!IsVisibleFromCamera(worldPos)) { HideImmediate(); return; }
+
+        float dist = toTarget.magnitude;
+        float distAlpha = 1f - Mathf.InverseLerp(fadeStartDistance, fadeEndDistance, dist);
+
+        float timeSinceDamage = Time.time - lastDamageTime;
+        float timeAlpha = 1f;
+        if (isFullHealth && hasBeenDamaged)
+            timeAlpha = Mathf.Clamp01(1f - Mathf.InverseLerp(visibleDuration * 0.6f, visibleDuration, timeSinceDamage));
+
+        canvasGroup.alpha = distAlpha * timeAlpha;
+    }
+
+    private void HideImmediate()
+    {
+        canvasGroup.alpha = 0f;
+    }
+
+    private bool IsVisibleFromCamera(Vector3 worldPos)
+    {
+        Vector3 origin = cam.transform.position;
+        Vector3 toTarget = worldPos - origin;
+        float distance = toTarget.magnitude;
+        if (distance <= 0.01f) return true;
+
+        Vector3 direction = toTarget / distance;
+        float rayDist = Mathf.Max(0f, distance - occlusionRayInset);
+
+        if (!Physics.Raycast(origin, direction, out RaycastHit hit, rayDist, occlusionMask, QueryTriggerInteraction.Ignore))
+            return true;
+
+        return hit.transform == enemyRoot || hit.transform.IsChildOf(enemyRoot);
     }
 
     private Vector3 GetAnchorWorldPosition()
@@ -126,63 +165,39 @@ public class EnemyHealthBar : MonoBehaviour
 
         if (useRendererBounds && renderers != null && renderers.Length > 0)
         {
-            Bounds bounds = renderers[0].bounds;
+            Bounds b = renderers[0].bounds;
             for (int i = 1; i < renderers.Length; i++)
-                bounds.Encapsulate(renderers[i].bounds);
-
-            return new Vector3(bounds.center.x, bounds.max.y + boundsTopPadding, bounds.center.z);
+                b.Encapsulate(renderers[i].bounds);
+            return new Vector3(b.center.x, b.max.y + boundsTopPadding, b.center.z);
         }
 
         return transform.TransformPoint(localOffset);
     }
 
-    private bool IsVisibleFromCamera(Vector3 worldPos)
-    {
-        Vector3 origin = cam.transform.position;
-        Vector3 toTarget = worldPos - origin;
-        float distance = toTarget.magnitude;
-        if (distance <= 0.01f)
-            return true;
-
-        Vector3 direction = toTarget / distance;
-        float rayDistance = Mathf.Max(0f, distance - occlusionRayInset);
-
-        if (!Physics.Raycast(origin, direction, out RaycastHit hit, rayDistance, occlusionMask, QueryTriggerInteraction.Ignore))
-            return true;
-
-        Transform hitTransform = hit.transform;
-        return hitTransform == enemyRoot || hitTransform.IsChildOf(enemyRoot);
-    }
-
-    private void HideBar()
-    {
-        root.style.visibility = Visibility.Hidden;
-    }
-
     private void OnStatUpdated(StatUpdatedEvent e)
     {
-        if (e.target != stats)
-            return;
+        if (e.target != stats) return;
 
         Refresh();
+
+        if (!isFullHealth)
+        {
+            hasBeenDamaged = true;
+            lastDamageTime = Time.time;
+        }
     }
 
     private void Refresh()
     {
         float current = stats.getHP();
         float max = stats.getMaxHP();
+        float percent = max > 0f ? current / max : 0f;
 
-        float percent = max > 0 ? current / max : 0f;
+        hpFillImage.fillAmount = percent;
 
-        hpFill.style.width = Length.Percent(percent * 100f);
+        if (hpText != null)
+            hpText.text = $"{Mathf.CeilToInt(current)}/{Mathf.CeilToInt(max)}";
 
-        hpText.text =
-            $"{Mathf.CeilToInt(current)}/{Mathf.CeilToInt(max)}";
-    }
-
-    private IEnumerator RefreshNextFrame()
-    {
-        yield return null;
-        Refresh();
+        isFullHealth = Mathf.Approximately(percent, 1f);
     }
 }

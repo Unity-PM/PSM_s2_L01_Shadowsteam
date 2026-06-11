@@ -1,30 +1,16 @@
+// --- FILE PlayerSkillInput.cs ---
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerSkillInput : MonoBehaviour
 {
-    SkillManager skillManager;
+    private SkillManager skillManager;
+    private void Awake() { skillManager = GetComponent<SkillManager>(); }
 
-    void Awake()
+    private void Update()
     {
-        skillManager = GetComponent<SkillManager>();
-        if (skillManager == null)
-            Debug.LogError("PlayerSkillInput requires SkillManager on the same GameObject.", this);
-    }
-
-    void Update()
-    {
-        if (skillManager == null)
-            return;
-
-        var keyboard = Keyboard.current;
-        if (keyboard == null)
-            return;
-
-        if (keyboard.digit1Key.wasPressedThisFrame)
-            skillManager.CastSkill("Fireball");
-
-        if (keyboard.digit2Key.wasPressedThisFrame)
-            skillManager.CastSkill("Heal");
+        if (Keyboard.current.digit1Key.wasPressedThisFrame) skillManager.TryExecuteCombo(0);
+        if (Keyboard.current.digit2Key.wasPressedThisFrame) skillManager.TryExecuteCombo(1);
+        if (Keyboard.current.digit3Key.wasPressedThisFrame) skillManager.TryExecuteCombo(2);
     }
 }

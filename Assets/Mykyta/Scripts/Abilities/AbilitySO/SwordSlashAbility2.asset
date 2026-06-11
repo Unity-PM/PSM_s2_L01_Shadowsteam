@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 805b8dbd24ef2fc4988b40e1856fb15b, type: 3}
+  m_Name: SwordSlashAbility2
+  m_EditorClassIdentifier: Assembly-CSharp::SwordSlashAbility
+  skillId: ShortMelee
+  manaCost: 0
+  cooldown: 0
+  allowedStates: 000000000100000002000000
+  range: 1.5
+  damage: 0
+  arcAngle: 90
+  slashTiltAngle: 0
+  lockMovement: 0
+  arcRayCount: 45
+  hitMask:
+    serializedVersion: 2
+    m_Bits: 0
+  sweepDuration: 0.4
+  sweepAcceleration: 0.1

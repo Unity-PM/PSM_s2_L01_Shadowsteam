@@ -1,17 +1,22 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class NPCTestController : MonoBehaviour
 {
-    [SerializeField] private DynamicAnimator animator;
-
-    void Awake()
+    [SerializeField] private UniversalClipAnimator animator;
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    private void Reset()
     {
-        animator ??= GetComponent<DynamicAnimator>();
+        animator = GetComponent<UniversalClipAnimator>();
     }
-
     void Start()
     {
-        if (animator != null)
-            animator.Play("Idle");
+        
+    }
+
+    // Update is called once per frame 
+    void Update()
+    {
+        animator.Play("Idle");
     }
 }

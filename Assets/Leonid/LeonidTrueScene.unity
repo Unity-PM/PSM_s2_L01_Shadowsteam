@@ -410,7 +410,7 @@ Transform:
   m_GameObject: {fileID: 519340590}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.5, z: 0.5}
+  m_LocalPosition: {x: 0, y: 0.265, z: 0.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -541,6 +541,7 @@ GameObject:
   - component: {fileID: 853619127}
   - component: {fileID: 853619126}
   - component: {fileID: 853619125}
+  - component: {fileID: 853619130}
   - component: {fileID: 853619122}
   - component: {fileID: 853619121}
   - component: {fileID: 853619120}
@@ -735,9 +736,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkillManager
   casterStats: {fileID: 853619122}
   castPoint: {fileID: 519340591}
-  skills:
-  - {fileID: 11400000, guid: ce546d470305f9f4983331f2cc17ee4e, type: 2}
-  - {fileID: 11400000, guid: 5d28595dd76c3c549b34b55d01123440, type: 2}
+  combos:
+  - {fileID: 11400000, guid: 43dbcce10cbf5aa49825685d06d7f971, type: 2}
+  - {fileID: 11400000, guid: 63728226e004d22448bdf870b971ac99, type: 2}
+  - {fileID: 11400000, guid: c6aa3d17e6a3a2244a308ad6bdeb742a, type: 2}
 --- !u!114 &853619121
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -766,7 +768,6 @@ MonoBehaviour:
   currentHP: 0
   currentMP: 0
   currentStamina: 0
-  staminaRecoveryRate: 1
 --- !u!65 &853619125
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -854,8 +855,8 @@ Transform:
   m_GameObject: {fileID: 853619108}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.5, y: 9.00005, z: 0.07236001}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 4.4543, y: 9.00005, z: -0.3837}
+  m_LocalScale: {x: 0.0915, y: 1, z: 0.08785}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 519340591}
@@ -873,6 +874,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe605bca14669d240b51746a65076040, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerKeyboardInput
+--- !u!114 &853619130
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 853619108}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 838a481dbcb77e94c931e40f48e11964, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SwordSlashVisualizer
+  ability: {fileID: 11400000, guid: ba9e5cfb05da239439320e9d194bab45, type: 2}
+  castPoint: {fileID: 519340591}
+  lineDuration: 4
+  hitColor: {r: 1, g: 0, b: 0, a: 1}
+  missColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  showGizmosAlways: 1
+  gizmoColor: {r: 1, g: 0.5, b: 0, a: 0.3}
 --- !u!1 &1163076674
 GameObject:
   m_ObjectHideFlags: 0

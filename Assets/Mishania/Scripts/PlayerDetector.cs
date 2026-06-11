@@ -11,11 +11,9 @@ namespace Platformer {
         
         public Transform Player { get; private set; }
         public Health PlayerHealth { get; private set; }
-
-        StatComponent cachedPlayerStats;
-
+        
         CountdownTimer detectionTimer;
-
+        
         IDetectionStrategy detectionStrategy;
 
         void Awake() {
@@ -27,7 +25,6 @@ namespace Platformer {
 
             Player = playerObject.transform;
             PlayerHealth = Player.GetComponent<Health>();
-            cachedPlayerStats = Player.GetComponent<StatComponent>();
         }
 
         void Start() {
@@ -37,49 +34,12 @@ namespace Platformer {
         
         void Update() => detectionTimer.Tick(Time.deltaTime);
 
-        void RefreshPlayerReferences() {
-            if (Player != null)
-                return;
-
-            var playerObject = GameObject.FindGameObjectWithTag("Player");
-            if (playerObject == null)
-                return;
-
-            Player = playerObject.transform;
-            PlayerHealth = Player.GetComponent<Health>();
-            cachedPlayerStats = Player.GetComponent<StatComponent>();
-        }
-
-        /// <summary>Игрок мёртв по <see cref="Health"/> или флагу <see cref="StatComponent.IsDead"/>.</summary>
-        public bool IsPlayerDeadForCombat() {
-            RefreshPlayerReferences();
-
-            if (PlayerHealth != null && PlayerHealth.IsDead)
-                return true;
-
-            if (cachedPlayerStats == null && Player != null)
-                cachedPlayerStats = Player.GetComponent<StatComponent>();
-
-            return cachedPlayerStats != null && cachedPlayerStats.IsDead;
-        }
-
         public bool CanDetectPlayer() {
-            RefreshPlayerReferences();
-
-            if (Player == null || detectionStrategy == null)
-                return false;
-
-            if (IsPlayerDeadForCombat()) {
-                detectionTimer.Stop();
-                return false;
-            }
-
             return detectionTimer.IsRunning || detectionStrategy.Execute(Player, transform, detectionTimer);
         }
 
         public bool CanAttackPlayer() {
-            if (Player == null || IsPlayerDeadForCombat())
-                return false;
+            if (Player == null) return false;
 
             var detectorPosition = transform.position;
             var playerPosition = Player.position;

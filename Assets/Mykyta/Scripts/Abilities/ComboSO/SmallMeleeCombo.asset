@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75a08bbf231614244a693b4be11c0d66, type: 3}
+  m_Name: SmallMeleeCombo
+  m_EditorClassIdentifier: Assembly-CSharp::ComboAbilitySO
+  skillId: 3
+  manaCost: 0
+  cooldown: 0
+  allowedStates: 000000000100000002000000
+  steps:
+  - ability: {fileID: 11400000, guid: ba9e5cfb05da239439320e9d194bab45, type: 2}
+    minDelayBeforeNext: 0.5
+    windowToNext: 2
+  - ability: {fileID: 11400000, guid: 50424da7ea81a95409a1fc5fa093858b, type: 2}
+    minDelayBeforeNext: 0.8
+    windowToNext: 2
+  - ability: {fileID: 11400000, guid: 3501fb7034d1c0d43b439eb1e2452bfb, type: 2}
+    minDelayBeforeNext: 0
+    windowToNext: 2
+  finalCooldown: 0.8

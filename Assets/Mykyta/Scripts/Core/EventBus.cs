@@ -1,38 +1,34 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public static class EventBus
 {
-    private static Dictionary<Type, Action<object>> events = new();
+    private static Dictionary<Type, Delegate> events = new();
 
-    private static Dictionary<Type, Dictionary<object, Action<object>>> _wrappers = new();
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    public static void Clear() => events.Clear();
 
     public static void Subscribe<T>(Action<T> listener)
     {
         Type type = typeof(T);
-        if (!events.ContainsKey(type)) events[type] = delegate { };
-        if (!_wrappers.ContainsKey(type)) _wrappers[type] = new();
-
-        Action<object> wrapper = (e) => listener((T)e);
-        _wrappers[type][listener] = wrapper;
-        events[type] += wrapper;
+        if (!events.ContainsKey(type)) events[type] = null;
+        events[type] = Delegate.Combine(events[type], listener);
     }
 
     public static void Unsubscribe<T>(Action<T> listener)
     {
         Type type = typeof(T);
-        if (_wrappers.TryGetValue(type, out var map) && map.TryGetValue(listener, out var wrapper))
-        {
-            events[type] -= wrapper;
-            map.Remove(listener);
-        }
+        if (events.ContainsKey(type)) events[type] = Delegate.Remove(events[type], listener);
     }
 
     public static void Publish<T>(T eventData)
     {
         Type type = typeof(T);
-
-        if (events.ContainsKey(type))
-            events[type].Invoke(eventData);
+        if (events.TryGetValue(type, out Delegate del) && del != null)
+        {
+            // Динамический вызов (так проще всего в KISS стиле для статики)
+            ((Action<T>)del).Invoke(eventData);
+        }
     }
 }

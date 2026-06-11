@@ -1,3 +1,4 @@
+using NUnit.Framework;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -7,7 +8,6 @@ public class HUDController : MonoBehaviour
 {
     [Header("Targets")]
     public StatComponent playerStats;
-    public SkillManager skillManager;
 
     [Header("UI Stat Bars")]
     public Image hpBar;
@@ -22,101 +22,83 @@ public class HUDController : MonoBehaviour
     public Image perkTwo;
     [Header("UI Item Bars")]
     public List<Image> items;
-
-    void Awake()
-    {
-        if (skillManager == null)
-            skillManager = FindFirstObjectByType<SkillManager>();
-    }
-
-    void OnEnable()
+    private void Awake()
     {
         EventBus.Subscribe<StatUpdatedEvent>(OnStatUpdated);
         EventBus.Subscribe<SkillCooldownEvent>(OnSkillCooldownChanged);
         EventBus.Subscribe<InventoryItemAddedEvent>(OnItemAdded);
     }
 
-    void Start()
+    private void Start()
     {
         RefreshStatUI();
     }
 
-    void OnDisable()
+    private void OnDestroy()
     {
         EventBus.Unsubscribe<StatUpdatedEvent>(OnStatUpdated);
         EventBus.Unsubscribe<SkillCooldownEvent>(OnSkillCooldownChanged);
         EventBus.Unsubscribe<InventoryItemAddedEvent>(OnItemAdded);
     }
 
-    void OnStatUpdated(StatUpdatedEvent e)
+    private void OnStatUpdated(StatUpdatedEvent e)
     {
         if (e.target != playerStats) return;
         RefreshStatUI();
     }
 
-    void OnSkillCooldownChanged(SkillCooldownEvent e)
+    private void OnSkillCooldownChanged(SkillCooldownEvent e)
     {
-        if (e.SkillId == null)
-            return;
+        if (string.IsNullOrEmpty(e.SkillId)) return;
 
-        float maxCooldown = GetSkillMaxCooldown(e.SkillId);
-        float fill = maxCooldown > 0f ? 1f - (e.CooldownRemaining / maxCooldown) : 1f;
-        fill = Mathf.Clamp01(fill);
+        var sm = playerStats.GetComponent<SkillManager>();
+        if (sm == null || sm.combos.Count == 0) return;
 
-        if (e.SkillId == "Fireball" && perkOne != null)
-            perkOne.fillAmount = fill;
+        // Используем метод из SkillManager, который мы добавили на прошлом этапе
+        float maxCD = sm.GetComboMaxCooldown(e.SkillId);
+        if (maxCD <= 0) maxCD = 1f;
 
-        if (e.SkillId == "Heal" && perkTwo != null)
-            perkTwo.fillAmount = fill;
+        float fill = e.CooldownRemaining / maxCD;
+
+        // Связываем слоты UI с первыми двумя комбо в списке менеджера
+        if (e.SkillId == sm.combos[0].skillId)
+        { perkOne.fillAmount = fill > 0 ? fill : 1; }
+        else if (sm.combos.Count > 1 && e.SkillId == sm.combos[1].skillId)
+        { perkTwo.fillAmount = fill > 0 ? fill : 1; }
     }
-
-    void OnItemAdded(InventoryItemAddedEvent e)
+    private void OnItemAdded(InventoryItemAddedEvent e)
     {
-        if (e.item == null || items == null)
-            return;
-
-        foreach (Image item in items)
+        if (e.item == null) return;
+        foreach(Image item in items)
         {
-            if (item == null)
-                continue;
-
             if (item.color != Color.black) {
-                item.color = Color.black;
-                return;
+                item.color = Color.black; return;
             }
         }
     }
-
-    void RefreshStatUI()
+    private void RefreshStatUI()
     {
-        if (playerStats == null)
-            return;
+        if (playerStats == null) return;
 
-        float maxHp = playerStats.getMaxHP();
-        float maxMp = playerStats.getMaxMP();
-        float maxStamina = playerStats.getMaxStamina();
+        hpBar.fillAmount = playerStats.getHP()/ playerStats.getMaxHP();
 
-        if (hpBar != null)
-            hpBar.fillAmount = maxHp > 0f ? playerStats.getHP() / maxHp : 0f;
-        if (mpBar != null)
-            mpBar.fillAmount = maxMp > 0f ? playerStats.getMP() / maxMp : 0f;
-        if (staminaBar != null)
-            staminaBar.fillAmount = maxStamina > 0f ? playerStats.getStamina() / maxStamina : 0f;
+        mpBar.fillAmount = playerStats.getMP()/ playerStats.getMaxMP();
 
-        if (hpText != null)
-            hpText.text = $"{(int)playerStats.getHP()} / {maxHp}";
-        if (mpText != null)
-            mpText.text = $"{(int)playerStats.getMP()} / {maxMp}";
-        if (staminaText != null)
-            staminaText.text = $"{(int)playerStats.getStamina()} / {maxStamina}";
+        staminaBar.fillAmount = playerStats.getStamina() / playerStats.getMaxStamina();
+
+        hpText.text = $"{(int)playerStats.getHP()} / {playerStats.getMaxHP()}";
+
+        mpText.text = $"{(int)playerStats.getMP()} / {playerStats.getMaxMP()}";
+
+        staminaText.text = $"{(int)playerStats.getStamina()} / {playerStats.getMaxStamina()}";
     }
 
-    float GetSkillMaxCooldown(string skillId)
+    [System.Obsolete]
+    private float GetSkillMaxCooldown(string skillId)
     {
-        if (skillManager == null || skillManager.skills == null)
-            return 1f;
-
-        var skill = skillManager.skills.Find(s => s != null && s.skillId == skillId);
-        return skill != null ? skill.cooldown : 1f;
+        // Исправляем обращение: теперь ищем в списке combos
+        var skillManager = playerStats.GetComponent<SkillManager>();
+        var combo = skillManager.combos.Find(s => s.skillId == skillId);
+        return combo != null ? combo.finalCooldown : 1f;
     }
 }

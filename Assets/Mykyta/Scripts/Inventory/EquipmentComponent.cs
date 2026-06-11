@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 
 public class EquipmentComponent : MonoBehaviour
 {
@@ -35,13 +34,9 @@ public class EquipmentComponent : MonoBehaviour
 
     private void Equip(EquipmentSO equipment)
     {
-        if (equipment == null)
-            return;
-
-        if (equippedItems.TryGetValue(equipment.slotType, out var currentEquipment) && currentEquipment != null)
-            RemoveModifiers(currentEquipment);
 
         equippedItems[equipment.slotType] = equipment;
+
         ApplyModifiers(equipment);
 
         Debug.Log($"Equipped {equipment.itemName}");
@@ -73,44 +68,6 @@ public class EquipmentComponent : MonoBehaviour
                 mod.statType,
                 -mod.value
             ));
-        }
-    }
-
-    public EquippedItemEntry[] ExportEquippedForSave()
-    {
-        return equippedItems
-            .Where(pair => pair.Value != null && !string.IsNullOrEmpty(pair.Value.itemId))
-            .Select(pair => new EquippedItemEntry
-            {
-                slot = pair.Key,
-                itemId = pair.Value.itemId
-            })
-            .ToArray();
-    }
-
-    public void HydrateEquippedFromSave(EquippedItemEntry[] savedItems, Dictionary<string, EquipmentSO> equipmentLookup)
-    {
-        foreach (var equippedItem in equippedItems.Values)
-        {
-            if (equippedItem != null)
-                RemoveModifiers(equippedItem);
-        }
-
-        equippedItems.Clear();
-
-        if (savedItems == null || equipmentLookup == null)
-            return;
-
-        foreach (var savedItem in savedItems)
-        {
-            if (savedItem == null || string.IsNullOrEmpty(savedItem.itemId))
-                continue;
-
-            if (!equipmentLookup.TryGetValue(savedItem.itemId, out var equipment) || equipment == null)
-                continue;
-
-            equippedItems[savedItem.slot] = equipment;
-            ApplyModifiers(equipment);
         }
     }
 }

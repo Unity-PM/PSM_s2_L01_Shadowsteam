@@ -18,4 +18,4 @@ MonoBehaviour:
   allowedStates: 0000000002000000
   projectilePrefab: {fileID: 7205872552607845878, guid: 08eea962f9e866f4190f780b77a8193a, type: 3}
   speed: 35
-  damage: 10
+  damage: 5

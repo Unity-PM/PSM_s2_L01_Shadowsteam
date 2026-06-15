@@ -10177,8 +10177,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MovementBrain
   idleModule: {fileID: 604360248}
   walkModule: {fileID: 0}
-  runModule: {fileID: 604360245}
-  sprintModule: {fileID: 604360246}
+  sprintModule: {fileID: 604360245}
   jumpModule: {fileID: 604360247}
   settings: {fileID: 11400000, guid: 7fc9d2d93448ab64c98b1d2a01b5264f, type: 2}
   cameraTransform: {fileID: 84907556}

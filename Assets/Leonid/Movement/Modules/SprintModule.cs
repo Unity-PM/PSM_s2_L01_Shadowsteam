@@ -9,7 +9,7 @@ public class SprintModule : MovementModule
         if (brain.Input == null || brain.settings == null)
             return false;
 
-        if (!brain.Input.IsRunPressed || brain.Input.MoveVector.sqrMagnitude < 0.04f)
+        if (!brain.Input.IsRunPressed || brain.Input.MoveVector.magnitude < 0.1f)
             return false;
 
         StatComponent stats = brain.GetComponent<StatComponent>();
@@ -21,15 +21,15 @@ public class SprintModule : MovementModule
 
     public override void Process(MovementBrain brain)
     {
-        StatComponent stats = brain.GetComponent<StatComponent>();
-        if (brain.Input == null || brain.settings == null || stats == null)
+        if (brain.Input == null || brain.settings == null)
             return;
 
         Vector3 dir = GetDirection(brain, brain.Input.MoveVector);
         brain.RotateTowards(dir, rotationSpeed);
         brain.Controller.Move(dir * brain.settings.sprintSpeed * Time.deltaTime);
 
-        if (brain.settings.staminaDrainPerSecond <= 0f || stats.getStamina() <= 0f)
+        StatComponent stats = brain.GetComponent<StatComponent>();
+        if (stats == null || brain.settings.staminaDrainPerSecond <= 0f || stats.getStamina() <= 0f)
             return;
 
         EventBus.Publish(new StatChangeEvent(

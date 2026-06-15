@@ -10,8 +10,6 @@ public class MovementBrain : MonoBehaviour
     [SerializeField]
     protected MovementModule walkModule;
     [SerializeField]
-    protected MovementModule runModule;
-    [SerializeField]
     protected MovementModule sprintModule;
     [SerializeField]
     protected MovementModule jumpModule;
@@ -64,14 +62,6 @@ public class MovementBrain : MonoBehaviour
             dynamicAnimator.ForcePlay(jumpAnimationStateId);
     }
 
-    void TryProcessJumpInput() {
-        if (inputLocked || jumpModule == null)
-            return;
-
-        if (IsGroundedForJump && jumpModule.CanEnter(this))
-            jumpModule.Process(this);
-    }
-
     void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -89,6 +79,10 @@ public class MovementBrain : MonoBehaviour
         if (walkModule == null)
             walkModule = gameObject.AddComponent<WalkModule>();
 
+        ResolveModule(ref idleModule, GetComponent<IdleModule>());
+        ResolveModule(ref sprintModule, GetComponent<SprintModule>());
+        ResolveModule(ref jumpModule, GetComponent<JumpModule>());
+
         if (settings == null)
             Debug.LogError("MovementBrain requires MovementSettingsSO.", this);
 
@@ -103,8 +97,6 @@ public class MovementBrain : MonoBehaviour
     {
         if (movementInput == null || settings == null)
             return;
-
-        TryProcessJumpInput();
 
         if (IsMovementLocked && !wasMovementLocked)
             StopHorizontalMovement();
@@ -129,8 +121,7 @@ public class MovementBrain : MonoBehaviour
 
         if (TryGetComponent(out StatComponent stats))
         {
-            stats.StaminaRegenPaused = CurrentState == MovementState.Running
-                || CurrentState == MovementState.Sprinting;
+            stats.StaminaRegenPaused = CurrentState == MovementState.Sprinting;
         }
     }
 
@@ -145,8 +136,17 @@ public class MovementBrain : MonoBehaviour
     bool IsFirmlyGrounded() =>
         controller.isGrounded && verticalVelocity.y <= 0.05f;
 
+    static void ResolveModule<T>(ref MovementModule slot, T component) where T : MovementModule
+    {
+        if (component != null)
+            slot = component;
+    }
+
     void UpdateActiveModule()
     {
+        if (IsGroundedForJump && jumpModule != null && jumpModule.CanEnter(this))
+            jumpModule.Process(this);
+
         if (isAirborne)
         {
             activeModule = idleModule;
@@ -161,8 +161,6 @@ public class MovementBrain : MonoBehaviour
 
         if (sprintModule != null && sprintModule.CanEnter(this))
             activeModule = sprintModule;
-        else if (runModule != null && runModule.CanEnter(this))
-            activeModule = runModule;
         else if (walkModule != null && walkModule.CanEnter(this))
             activeModule = walkModule;
         else

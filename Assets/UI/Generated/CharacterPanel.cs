@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -52,40 +50,6 @@ public class CharacterPanel : MonoBehaviour
 	};
 	#endregion
 
-	#region Debug
-	// #region agent log
-	const string DebugLogPath = "/Users/misakostenko/Desktop/Politechnika/Unity/PSM_s2_L01_Shadowsteam/.cursor/debug-34eaa1.log";
-
-	static void AgentLog(string hypothesisId, string location, string message, string dataJson)
-	{
-		try
-		{
-			var line = $"{{\"sessionId\":\"34eaa1\",\"hypothesisId\":\"{hypothesisId}\",\"location\":\"{location}\",\"message\":\"{message}\",\"data\":{dataJson},\"timestamp\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}\n";
-			File.AppendAllText(DebugLogPath, line);
-		}
-		catch { }
-	}
-
-	static string JoinChildNames(VisualElement root)
-	{
-		if (root == null)
-			return "null";
-
-		var sb = new StringBuilder();
-		for (int i = 0; i < root.childCount; i++)
-		{
-			if (i > 0)
-				sb.Append(',');
-
-			var child = root[i];
-			sb.Append(string.IsNullOrEmpty(child.name) ? child.GetType().Name : child.name);
-		}
-
-		return sb.ToString();
-	}
-	// #endregion
-	#endregion
-
 	#region Lifecycle
 	void OnEnable()
 	{
@@ -95,25 +59,12 @@ public class CharacterPanel : MonoBehaviour
 			uiDocument = GetComponent<UIDocument>();
 
 		var root = uiDocument != null ? uiDocument.rootVisualElement : null;
-		var vta = uiDocument != null ? uiDocument.visualTreeAsset : null;
-
-		// #region agent log
-		AgentLog("H-A", "CharacterPanel.OnEnable", "enable",
-			$"{{\"vtaNull\":{(vta == null).ToString().ToLower()},\"vtaName\":\"{(vta != null ? vta.name : "null")}\",\"rootNull\":{(root == null).ToString().ToLower()},\"rootChildCount\":{(root != null ? root.childCount : -1)}}}");
-		// #endregion
-
 		if (root == null)
 		{
-			// #region agent log
-			AgentLog("H-B", "CharacterPanel.OnEnable", "root null immediate bind", "{}");
-			// #endregion
 			TryBindUi();
 			return;
 		}
 
-		// #region agent log
-		AgentLog("H-B", "CharacterPanel.OnEnable", "deferred bind scheduled", "{}");
-		// #endregion
 		root.schedule.Execute(TryBindUi).ExecuteLater(0);
 	}
 
@@ -153,11 +104,6 @@ public class CharacterPanel : MonoBehaviour
 
 		statsList = root.Q<VisualElement>("stats-list");
 		closeBtn = root.Q<Button>("close-btn");
-
-		// #region agent log
-		AgentLog("H-C", "CharacterPanel.TryBindUi", "bind result",
-			$"{{\"vtaNull\":{(uiDocument.visualTreeAsset == null).ToString().ToLower()},\"vtaName\":\"{(uiDocument.visualTreeAsset != null ? uiDocument.visualTreeAsset.name : "null")}\",\"rootChildCount\":{root.childCount},\"childNames\":\"{JoinChildNames(root)}\",\"statsListFound\":{(statsList != null).ToString().ToLower()},\"closeBtnFound\":{(closeBtn != null).ToString().ToLower()}}}");
-		// #endregion
 
 		if (statsList == null)
 			Debug.LogWarning("[CharacterPanel] stats-list not found in UXML.", this);
@@ -224,11 +170,6 @@ public class CharacterPanel : MonoBehaviour
 	#region Data
 	public void Refresh()
 	{
-		// #region agent log
-		AgentLog("H-B", "CharacterPanel.Refresh", "refresh called",
-			$"{{\"statsListNull\":{(statsList == null).ToString().ToLower()}}}");
-		// #endregion
-
 		if (statsList == null)
 		{
 			TryBindUi();

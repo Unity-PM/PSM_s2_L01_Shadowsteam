@@ -9,6 +9,9 @@ public class EnemyHealthBar : MonoBehaviour
     [SerializeField] private Canvas worldCanvas;
     [SerializeField] private Image hpFillImage;
     [SerializeField] private TextMeshProUGUI hpText;
+    [SerializeField] private bool createTextIfMissing = true;
+    [SerializeField] private float hpTextFontSize = 0.14f;
+    [SerializeField] private Color hpTextColor = Color.white;
 
     [Header("Stats")]
     [SerializeField] private StatComponent stats;
@@ -16,7 +19,7 @@ public class EnemyHealthBar : MonoBehaviour
     [Header("Anchor")]
     [SerializeField] private Transform headAnchor;
     [SerializeField] private Vector3 localOffset = new Vector3(0f, 2.2f, 0f);
-    [SerializeField] private bool useRendererBounds = false;
+    [SerializeField] private bool useRendererBounds = true;
     [SerializeField] private float boundsTopPadding = 0.15f;
 
     [Header("Distance Scaling")]
@@ -43,9 +46,15 @@ public class EnemyHealthBar : MonoBehaviour
     private float lastDamageTime = float.NegativeInfinity;
     private bool isFullHealth = true;
     private bool hasBeenDamaged;
+    private bool isSubscribed;
 
     private void Awake()
     {
+        if (!ResolveUiReferences())
+            return;
+
+        ConfigureFillImage();
+
         canvasGroup = worldCanvas.GetComponent<CanvasGroup>();
         if (canvasGroup == null)
             canvasGroup = worldCanvas.gameObject.AddComponent<CanvasGroup>();
@@ -58,17 +67,27 @@ public class EnemyHealthBar : MonoBehaviour
     private void Start()
     {
         cam = Camera.main;
-        enemyRoot = transform;
-        renderers = GetComponentsInChildren<Renderer>();
 
         if (stats == null)
             stats = GetComponentInParent<StatComponent>() ?? GetComponentInChildren<StatComponent>();
+
+        if (stats == null)
+        {
+            Debug.LogWarning($"{nameof(EnemyHealthBar)} on {name} has no {nameof(StatComponent)} assigned.", this);
+            HideImmediate();
+            enabled = false;
+            return;
+        }
+
+        enemyRoot = stats.transform;
+        renderers = enemyRoot.GetComponentsInChildren<Renderer>();
 
         worldCanvas.renderMode = RenderMode.WorldSpace;
         worldCanvas.worldCamera = cam;
 
         UpdateCanvasPosition();
         EventBus.Subscribe<StatUpdatedEvent>(OnStatUpdated);
+        isSubscribed = true;
         StartCoroutine(InitRefreshRoutine());
     }
 
@@ -80,7 +99,8 @@ public class EnemyHealthBar : MonoBehaviour
 
     private void OnDestroy()
     {
-        EventBus.Unsubscribe<StatUpdatedEvent>(OnStatUpdated);
+        if (isSubscribed)
+            EventBus.Unsubscribe<StatUpdatedEvent>(OnStatUpdated);
     }
 
     private void LateUpdate()
@@ -139,7 +159,8 @@ public class EnemyHealthBar : MonoBehaviour
 
     private void HideImmediate()
     {
-        canvasGroup.alpha = 0f;
+        if (canvasGroup != null)
+            canvasGroup.alpha = 0f;
     }
 
     private bool IsVisibleFromCamera(Vector3 worldPos)
@@ -171,7 +192,8 @@ public class EnemyHealthBar : MonoBehaviour
             return new Vector3(b.center.x, b.max.y + boundsTopPadding, b.center.z);
         }
 
-        return transform.TransformPoint(localOffset);
+        Transform anchorRoot = enemyRoot != null ? enemyRoot : transform;
+        return anchorRoot.TransformPoint(localOffset);
     }
 
     private void OnStatUpdated(StatUpdatedEvent e)
@@ -189,6 +211,9 @@ public class EnemyHealthBar : MonoBehaviour
 
     private void Refresh()
     {
+        if (stats == null || hpFillImage == null)
+            return;
+
         float current = stats.getHP();
         float max = stats.getMaxHP();
         float percent = max > 0f ? current / max : 0f;
@@ -199,5 +224,88 @@ public class EnemyHealthBar : MonoBehaviour
             hpText.text = $"{Mathf.CeilToInt(current)}/{Mathf.CeilToInt(max)}";
 
         isFullHealth = Mathf.Approximately(percent, 1f);
+    }
+
+    private bool ResolveUiReferences()
+    {
+        if (worldCanvas == null)
+            worldCanvas = GetComponentInChildren<Canvas>(true);
+
+        if (worldCanvas == null)
+        {
+            Debug.LogWarning($"{nameof(EnemyHealthBar)} on {name} has no {nameof(Canvas)} assigned.", this);
+            enabled = false;
+            return false;
+        }
+
+        if (hpFillImage == null)
+            hpFillImage = FindHpFillImage();
+
+        if (hpText == null)
+            hpText = worldCanvas.GetComponentInChildren<TextMeshProUGUI>(true);
+
+        if (hpText == null && createTextIfMissing)
+            hpText = CreateHpText();
+
+        if (hpFillImage == null)
+        {
+            Debug.LogWarning($"{nameof(EnemyHealthBar)} on {name} has no HP fill {nameof(Image)} assigned.", this);
+            enabled = false;
+            return false;
+        }
+
+        return true;
+    }
+
+    private Image FindHpFillImage()
+    {
+        Image[] images = worldCanvas.GetComponentsInChildren<Image>(true);
+
+        for (int i = 0; i < images.Length; i++)
+        {
+            if (images[i].name.ToLowerInvariant().Contains("fill"))
+                return images[i];
+        }
+
+        return images.Length > 0 ? images[0] : null;
+    }
+
+    private void ConfigureFillImage()
+    {
+        hpFillImage.type = Image.Type.Filled;
+        hpFillImage.fillMethod = Image.FillMethod.Horizontal;
+        hpFillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
+    }
+
+    private TextMeshProUGUI CreateHpText()
+    {
+        GameObject textObject = new GameObject("HPText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        RectTransform rect = textObject.GetComponent<RectTransform>();
+        RectTransform fillRect = hpFillImage.rectTransform;
+        Transform parent = fillRect.parent != null ? fillRect.parent : worldCanvas.transform;
+
+        rect.SetParent(parent, false);
+        rect.anchorMin = fillRect.anchorMin;
+        rect.anchorMax = fillRect.anchorMax;
+        rect.anchoredPosition = fillRect.anchoredPosition;
+        rect.sizeDelta = new Vector2(
+            Mathf.Max(fillRect.sizeDelta.x, 0.9f),
+            Mathf.Max(fillRect.sizeDelta.y, 0.2f)
+        );
+        rect.pivot = fillRect.pivot;
+        rect.localRotation = Quaternion.identity;
+        rect.localScale = Vector3.one;
+        rect.SetAsLastSibling();
+
+        TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = hpTextColor;
+        text.fontSize = hpTextFontSize;
+        text.enableAutoSizing = true;
+        text.fontSizeMin = 0.06f;
+        text.fontSizeMax = hpTextFontSize;
+        text.raycastTarget = false;
+
+        return text;
     }
 }

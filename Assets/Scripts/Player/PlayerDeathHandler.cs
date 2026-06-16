@@ -5,7 +5,7 @@ using UnityEngine.Serialization;
 
 /// <summary>
 /// Реагирует на <see cref="DeathEvent"/>: смерть/пауза, проигрывание клипов, респавн и восстановление статов.
-/// Анимация через <see cref="DynamicAnimator"/> (файл <c>Assets/Anton/Scripts/Animation Handler/DynamicAnimator.cs</c>), как у <see cref="Platformer.Enemy"/> и <c>NPCTestController</c>.
+/// Анимация через <see cref="DynamicAnimator"/> (файл <c>Assets/Scripts/Animation/DynamicAnimator.cs</c>), как у <see cref="Platformer.Enemy"/> и <c>NpcAnimationTestController</c>.
 /// Точка спавна — <see cref="spawnAnchor"/> (на момент респавна) или снимок в <see cref="Start"/> при <see cref="rememberStartPoseWhenNoAnchor"/>.
 /// </summary>
 public class PlayerDeathHandler : MonoBehaviour {
@@ -152,6 +152,19 @@ public class PlayerDeathHandler : MonoBehaviour {
     void CaptureSpawnFromTransform(Transform t) {
         spawnPositionSnapshot = t.position;
         spawnRotationSnapshot = t.rotation;
+    }
+
+    public void SetRespawnPoint(Vector3 position, Quaternion rotation) {
+        spawnAnchor = null;
+        spawnPositionSnapshot = position;
+        spawnRotationSnapshot = rotation;
+    }
+
+    public void SetRespawnAnchor(Transform anchor) {
+        spawnAnchor = anchor;
+
+        if (spawnAnchor != null)
+            CaptureSpawnFromTransform(spawnAnchor);
     }
 
     Vector3 ResolveSpawnPosition() =>

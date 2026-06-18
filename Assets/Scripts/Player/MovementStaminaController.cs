@@ -25,7 +25,6 @@ public class MovementStaminaController : MonoBehaviour
             input.sprint = false;
             return;
         }
-
         EventBus.Publish(new StatChangeEvent(
             stats,
             StatType.Stamina,

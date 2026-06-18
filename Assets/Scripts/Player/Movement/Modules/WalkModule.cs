@@ -1,19 +1,19 @@
 using UnityEngine;
 
-public class WalkModule : MovementModule
+namespace Player.Movement.Modules2
 {
-    public override MovementState State => MovementState.Walking;
-
-    public override bool CanEnter(MovementBrain brain) =>
-        brain.Input != null && brain.Input.MoveVector.magnitude > 0.1f;
-
-    public override void Process(MovementBrain brain)
+    public class WalkModule : MovementModule
     {
-        if (brain.Input == null || brain.settings == null)
-            return;
+        public override MovementState State => MovementState.Walking;
 
-        Vector3 dir = GetDirection(brain, brain.Input.MoveVector);
-        brain.RotateTowards(dir, rotationSpeed);
-        brain.Controller.Move(dir * brain.settings.walkSpeed * Time.deltaTime);
+        public override bool CanEnter(MovementBrain brain) => LocomotionKit.WantsToMove(brain);
+
+        public override Vector3 Process(MovementBrain brain)
+        {
+            if (brain.settings == null)
+                return Vector3.zero;
+
+            return LocomotionKit.CalculateTargetVelocity(brain, brain.settings.walkSpeed);
+        }
     }
 }

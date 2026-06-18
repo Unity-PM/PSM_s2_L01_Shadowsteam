@@ -552,10 +552,8 @@ GameObject:
   - component: {fileID: 853619114}
   - component: {fileID: 853619129}
   - component: {fileID: 853619113}
-  - component: {fileID: 853619112}
   - component: {fileID: 853619111}
   - component: {fileID: 853619110}
-  - component: {fileID: 853619109}
   m_Layer: 0
   m_Name: Character
   m_TagString: Player
@@ -563,19 +561,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &853619109
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 853619108}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5a2f97fd5170c0845bdc8fd68a2f80f2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GlideModule
-  rotationSpeed: 10
 --- !u!114 &853619110
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -601,19 +586,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1eda3c54be0e8c469615c9307048481, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SprintModule
-  rotationSpeed: 10
---- !u!114 &853619112
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 853619108}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 425141474b1e3a94b8a85aa8513de314, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RunModule
   rotationSpeed: 10
 --- !u!114 &853619113
 MonoBehaviour:
@@ -641,7 +613,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MovementBrain
   idleModule: {fileID: 853619113}
-  walkModule: {fileID: 853619112}
+  walkModule: {fileID: 0}
   sprintModule: {fileID: 853619111}
   jumpModule: {fileID: 853619110}
   settings: {fileID: 11400000, guid: 7fc9d2d93448ab64c98b1d2a01b5264f, type: 2}

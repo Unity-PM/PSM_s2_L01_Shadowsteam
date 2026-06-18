@@ -1,40 +1,23 @@
 using UnityEngine;
 
-public class SprintModule : MovementModule
+namespace Player.Movement.Modules2
 {
-    public override MovementState State => MovementState.Sprinting;
-
-    public override bool CanEnter(MovementBrain brain)
+    public class SprintModule : MovementModule
     {
-        if (brain.Input == null || brain.settings == null)
-            return false;
+        public override MovementState State => MovementState.Sprinting;
 
-        if (!brain.Input.IsRunPressed || brain.Input.MoveVector.magnitude < 0.1f)
-            return false;
+        public override bool CanEnter(MovementBrain brain) =>
+            LocomotionKit.WantsSprint(brain)
+            && LocomotionKit.WantsToMove(brain)
+            && LocomotionKit.CanSpendStamina(brain);
 
-        StatComponent stats = brain.GetComponent<StatComponent>();
-        if (stats == null)
-            return true;
+        public override Vector3 Process(MovementBrain brain)
+        {
+            if (brain.settings == null)
+                return Vector3.zero;
 
-        return !stats.IsStaminaExhausted && stats.getStamina() > 0f;
-    }
-
-    public override void Process(MovementBrain brain)
-    {
-        if (brain.Input == null || brain.settings == null)
-            return;
-
-        Vector3 dir = GetDirection(brain, brain.Input.MoveVector);
-        brain.RotateTowards(dir, rotationSpeed);
-        brain.Controller.Move(dir * brain.settings.sprintSpeed * Time.deltaTime);
-
-        StatComponent stats = brain.GetComponent<StatComponent>();
-        if (stats == null || brain.settings.staminaDrainPerSecond <= 0f || stats.getStamina() <= 0f)
-            return;
-
-        EventBus.Publish(new StatChangeEvent(
-            stats,
-            StatType.Stamina,
-            -brain.settings.staminaDrainPerSecond * Time.deltaTime));
+            LocomotionKit.SpendStaminaPerSecond(LocomotionKit.Stats(brain), brain.settings.staminaDrainPerSecond);
+            return LocomotionKit.CalculateTargetVelocity(brain, brain.settings.sprintSpeed);
+        }
     }
 }

@@ -111,11 +111,8 @@ public class PlayerDeathHandler : MonoBehaviour {
         stats.ClearDeadState();
         stats.HPRegenPaused = false;
 
-        if (dynamicAnimator != null) {
-            dynamicAnimator.SetInputEnabled(true);
-            if (!string.IsNullOrEmpty(respawnAnimationStateId))
-                dynamicAnimator.ResetToState(respawnAnimationStateId);
-        }
+        if (dynamicAnimator != null && !string.IsNullOrEmpty(respawnAnimationStateId))
+            dynamicAnimator.ResetToState(respawnAnimationStateId);
 
         SetPlayerControlLocked(false);
 
@@ -202,9 +199,6 @@ public class PlayerDeathHandler : MonoBehaviour {
             if (locked)
                 movementBrain.StopHorizontalMovement();
         }
-
-        if (dynamicAnimator != null)
-            dynamicAnimator.SetInputEnabled(!locked);
     }
 
     static void RestoreFullVitality(StatComponent s) {

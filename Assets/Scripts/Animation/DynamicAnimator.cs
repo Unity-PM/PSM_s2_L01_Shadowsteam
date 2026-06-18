@@ -2,19 +2,17 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
-using UnityEngine.InputSystem;
 using UnityEngine.Playables;
-using UnityEngine.Serialization;
 
 [RequireComponent(typeof(Animator))]
 public class DynamicAnimator : MonoBehaviour
 {
-    public enum InputPlaybackMode
+    public enum AnimationCategory
     {
-        Auto,
-        Press,
-        Hold,
-        PressAndHold
+        Locomotion,
+        Combat,
+        Death,
+        Interaction
     }
 
     [Serializable]
@@ -22,27 +20,13 @@ public class DynamicAnimator : MonoBehaviour
     {
         public string id;
         public AnimationClip clip;
+        public AnimationCategory category = AnimationCategory.Locomotion;
         public bool loop = true;
         public float fadeTime = 0.15f;
         public float speed = 1f;
         public string nextStateAfterFinish;
-        [Tooltip("Blocked movement while animation is playing (useful for Attack, Die).")]
+        [Tooltip("Blocks movement while the clip is playing (Combat/Death categories set this automatically).")]
         public bool locksMovement;
-    }
-
-    [Serializable]
-    public class InputAnimationBinding
-    {
-        public InputActionReference action;
-        public string animationId;
-        [Tooltip("Auto keeps old behavior. Press plays once. Hold stays active while pressed. PressAndHold plays once on tap and repeats full cycles while held.")]
-        public InputPlaybackMode playbackMode = InputPlaybackMode.Auto;
-        [FormerlySerializedAs("playOnlyOnPressed")]
-        [HideInInspector] public bool legacyPlayOnlyOnPressed = true;
-        public bool forcePlay;
-        public int priority;
-        public string releaseStateId;
-        public bool finishCurrentCycleOnRelease;
     }
 
     [Header("Animation Setup")]
@@ -51,12 +35,8 @@ public class DynamicAnimator : MonoBehaviour
     [SerializeField] private float defaultLocomotionFadeTime = 0.15f;
     [SerializeField] private float defaultActionFadeTime = 0.08f;
 
-    [Header("Input Setup")]
-    [SerializeField] private List<InputAnimationBinding> inputBindings = new();
-
     private readonly Dictionary<string, AnimationState> stateMap = new();
-    private readonly Dictionary<int, double> activeBindingTimes = new();
-    private readonly HashSet<InputAction> subscribedActions = new();
+    private readonly Dictionary<string, AnimationClipPlayable> playableCache = new();
 
     private Animator animator;
     private PlayableGraph graph;
@@ -69,13 +49,9 @@ public class DynamicAnimator : MonoBehaviour
 
     private AnimationState currentState;
     private AnimationState pendingState;
-    private float fadeTimer;
     private float currentFadeTime;
+    private double fadeStartGraphTime;
     private bool isFading;
-    private string deferredReleaseAnimationId;
-    private string deferredReleaseFallbackStateId;
-    private int deferredReleaseTargetCycle = -1;
-    private bool inputEnabled = true;
 
     public string CurrentStateId => pendingState?.id ?? currentState?.id;
 
@@ -83,14 +59,9 @@ public class DynamicAnimator : MonoBehaviour
         IsStateCurrentlyBlocking(currentState)
         || (isFading && IsStateCurrentlyBlocking(pendingState));
 
-    public void SetInputEnabled(bool enabled)
+    public AnimationCategory GetCategory(string stateId)
     {
-        inputEnabled = enabled;
-        if (enabled)
-            return;
-
-        activeBindingTimes.Clear();
-        ClearDeferredRelease();
+        return stateMap.TryGetValue(stateId, out var state) ? state.category : AnimationCategory.Locomotion;
     }
 
     public bool TryGetClipLength(string stateId, out float length)
@@ -102,6 +73,25 @@ public class DynamicAnimator : MonoBehaviour
 
         length = state.clip.length / Mathf.Max(0.01f, state.speed);
         return true;
+    }
+
+    public bool CanRestartState(string stateId)
+    {
+        if (!TryGetState(stateId, out var state))
+            return true;
+
+        bool isCurrent = string.Equals(currentState?.id, stateId, StringComparison.Ordinal);
+        bool isPending = string.Equals(pendingState?.id, stateId, StringComparison.Ordinal);
+        if (!isCurrent && !isPending)
+            return true;
+
+        if (isPending && isFading)
+            return false;
+
+        if (!isCurrent)
+            return false;
+
+        return CanReplayCurrentState(state);
     }
 
     public bool TryGetStateNormalizedTime(string stateId, out float normalizedTime)
@@ -133,7 +123,7 @@ public class DynamicAnimator : MonoBehaviour
             animator.runtimeAnimatorController = null;
 
         RebuildStateMap();
-        ApplyCombatStateDefaults();
+        ApplyCategoryDefaults();
         EnsureValidDefaultState();
 
         graph = PlayableGraph.Create($"{name}_DynamicAnimator");
@@ -146,6 +136,7 @@ public class DynamicAnimator : MonoBehaviour
         mixer.SetInputWeight(currentInput, 1f);
         mixer.SetInputWeight(nextInput, 0f);
 
+        BuildPlayableCache();
         graph.Play();
 
         Play(defaultState, true);
@@ -155,32 +146,10 @@ public class DynamicAnimator : MonoBehaviour
     {
         if (graph.IsValid())
             graph.Play();
-
-        subscribedActions.Clear();
-
-        foreach (var binding in inputBindings)
-        {
-            var action = binding.action?.action;
-            if (action == null || !subscribedActions.Add(action))
-                continue;
-
-            action.Enable();
-            action.performed += OnActionPerformed;
-            action.canceled += OnActionCanceled;
-        }
     }
 
     private void OnDisable()
     {
-        foreach (var action in subscribedActions)
-        {
-            action.performed -= OnActionPerformed;
-            action.canceled -= OnActionCanceled;
-        }
-
-        subscribedActions.Clear();
-        activeBindingTimes.Clear();
-
         if (graph.IsValid())
             graph.Stop();
     }
@@ -188,88 +157,14 @@ public class DynamicAnimator : MonoBehaviour
     private void Update()
     {
         HandleFade();
-        HandleDeferredRelease();
         HandleAutoTransition();
     }
 
-    public void Play(string stateId)
-    {
-        Play(stateId, false);
-    }
+    public void Play(string stateId) => Play(stateId, false);
 
-    public void ForcePlay(string stateId)
-    {
-        Play(stateId, true);
-    }
+    public void ForcePlay(string stateId) => Play(stateId, true);
 
-    public void ResetToState(string stateId)
-    {
-        activeBindingTimes.Clear();
-        ClearDeferredRelease();
-        ForcePlay(stateId);
-    }
-
-    private void OnActionPerformed(InputAction.CallbackContext context)
-    {
-        if (!inputEnabled)
-            return;
-
-        for (int i = 0; i < inputBindings.Count; i++)
-        {
-            var binding = inputBindings[i];
-            if (binding.action?.action != context.action || string.IsNullOrWhiteSpace(binding.animationId))
-                continue;
-
-            if (IsMovementLocked && !ShouldAllowDuringMovementLock(binding.animationId))
-                continue;
-
-            if (ShouldTrackAsActive(binding, context.action))
-                activeBindingTimes[i] = Time.timeAsDouble;
-
-            CancelDeferredRelease(binding.animationId);
-
-            if (binding.forcePlay || ShouldAllowDuringMovementLock(binding.animationId))
-                ForcePlay(binding.animationId);
-            else
-                Play(binding.animationId);
-        }
-    }
-
-    private void OnActionCanceled(InputAction.CallbackContext context)
-    {
-        if (!inputEnabled)
-            return;
-        string fallbackStateId = null;
-        bool changed = false;
-        string deferredAnimationId = null;
-
-        for (int i = 0; i < inputBindings.Count; i++)
-        {
-            var binding = inputBindings[i];
-            if (binding.action?.action != context.action || !ShouldTrackAsActive(binding, context.action))
-                continue;
-
-            changed |= activeBindingTimes.Remove(i);
-
-            if (string.IsNullOrWhiteSpace(fallbackStateId) && !string.IsNullOrWhiteSpace(binding.releaseStateId))
-                fallbackStateId = binding.releaseStateId;
-
-            if (ShouldFinishCurrentCycleOnRelease(binding) && IsCurrentOrPendingState(binding.animationId))
-                deferredAnimationId = binding.animationId;
-        }
-
-        if (!changed)
-            return;
-
-        string resolvedStateId = ResolveStateFromInput(fallbackStateId);
-        if (!string.IsNullOrWhiteSpace(deferredAnimationId) && !string.Equals(resolvedStateId, deferredAnimationId, StringComparison.Ordinal))
-        {
-            ScheduleDeferredRelease(deferredAnimationId, fallbackStateId);
-            return;
-        }
-
-        Play(resolvedStateId);
-    }
+    public void ResetToState(string stateId) => ForcePlay(stateId);
 
     private void Play(string stateId, bool force)
     {
@@ -279,41 +174,150 @@ public class DynamicAnimator : MonoBehaviour
         if (!force && IsMovementLocked && !IsStateLockingMovement(state))
             return;
 
+        var playable = GetOrCreatePlayable(state);
+
         bool isSameCurrentState = currentState?.id == state.id;
         bool isSamePendingState = pendingState?.id == state.id;
         bool canReplayFinishedCurrentState = isSameCurrentState && CanReplayCurrentState(state);
 
-        if (!force && (isSamePendingState || (isSameCurrentState && !canReplayFinishedCurrentState)))
+        if (isSameCurrentState && !canReplayFinishedCurrentState)
             return;
 
-        if (force || !string.Equals(state.id, deferredReleaseAnimationId, StringComparison.Ordinal))
-            ClearDeferredRelease();
+        if (!force && isSamePendingState)
+            return;
 
         if (!currentPlayable.IsValid() && !isFading)
         {
-            currentPlayable = CreatePlayable(state);
-            mixer.DisconnectInput(currentInput);
-            mixer.ConnectInput(currentInput, currentPlayable, 0);
-            mixer.SetInputWeight(currentInput, 1f);
-            mixer.SetInputWeight(nextInput, 0f);
-
-            currentState = state;
-            pendingState = null;
+            ApplyImmediateState(state, playable);
             return;
         }
 
-        if (nextPlayable.IsValid())
-            nextPlayable.Destroy();
+        if (isFading)
+            CompleteFadeImmediately();
 
-        nextPlayable = CreatePlayable(state);
+        if (ReferenceEquals(playable, currentPlayable))
+        {
+            ApplyImmediateState(state, playable);
+            return;
+        }
+
+        if (ReferenceEquals(playable, nextPlayable) && nextPlayable.IsValid())
+            return;
+
+        DisconnectPlayableFromMixer(playable);
+
+        nextPlayable = ResetPlayable(playable, state);
         mixer.DisconnectInput(nextInput);
         mixer.ConnectInput(nextInput, nextPlayable, 0);
+        mixer.SetInputWeight(currentInput, 1f);
         mixer.SetInputWeight(nextInput, 0f);
 
         pendingState = state;
-        fadeTimer = 0f;
+        fadeStartGraphTime = GetGraphTime();
         currentFadeTime = ResolveFadeTime(state);
         isFading = true;
+    }
+
+    private void ApplyImmediateState(AnimationState state, AnimationClipPlayable playable)
+    {
+        if (isFading)
+            CompleteFadeImmediately();
+
+        playable = ResetPlayable(playable, state);
+        DisconnectPlayableFromMixer(playable);
+
+        mixer.DisconnectInput(currentInput);
+        mixer.DisconnectInput(nextInput);
+
+        currentPlayable = playable;
+        nextPlayable = default;
+        mixer.ConnectInput(currentInput, currentPlayable, 0);
+        mixer.SetInputWeight(currentInput, 1f);
+        mixer.SetInputWeight(nextInput, 0f);
+
+        currentState = state;
+        pendingState = null;
+        isFading = false;
+    }
+
+    private void CompleteFadeImmediately()
+    {
+        if (!isFading)
+            return;
+
+        mixer.DisconnectInput(currentInput);
+
+        currentPlayable = nextPlayable;
+        nextPlayable = default;
+        currentState = pendingState;
+        pendingState = null;
+
+        int previousInput = currentInput;
+        currentInput = nextInput;
+        nextInput = previousInput;
+
+        mixer.SetInputWeight(currentInput, 1f);
+        mixer.SetInputWeight(nextInput, 0f);
+        isFading = false;
+    }
+
+    private void DisconnectPlayableFromMixer(AnimationClipPlayable playable)
+    {
+        if (!mixer.IsValid() || !playable.IsValid())
+            return;
+
+        int inputCount = mixer.GetInputCount();
+        for (int i = 0; i < inputCount; i++)
+        {
+            var input = mixer.GetInput(i);
+            if (input.IsValid() && input.Equals(playable))
+                mixer.DisconnectInput(i);
+        }
+    }
+
+    private AnimationClipPlayable ResetPlayable(AnimationClipPlayable playable, AnimationState state)
+    {
+        playable.SetSpeed(state.speed);
+        playable.SetTime(0d);
+        return playable;
+    }
+
+    private AnimationClipPlayable PreparePlayable(AnimationState state)
+    {
+        return ResetPlayable(GetOrCreatePlayable(state), state);
+    }
+
+    private AnimationClipPlayable GetOrCreatePlayable(AnimationState state)
+    {
+        if (playableCache.TryGetValue(state.id, out var cached) && cached.IsValid())
+            return cached;
+
+        var playable = AnimationClipPlayable.Create(graph, state.clip);
+        playable.SetApplyFootIK(true);
+        playableCache[state.id] = playable;
+        return playable;
+    }
+
+    private void BuildPlayableCache()
+    {
+        playableCache.Clear();
+
+        foreach (var pair in stateMap)
+        {
+            var state = pair.Value;
+            var playable = AnimationClipPlayable.Create(graph, state.clip);
+            playable.SetApplyFootIK(true);
+            playableCache[pair.Key] = playable;
+        }
+    }
+
+    private double GetGraphTime()
+    {
+        if (!graph.IsValid())
+            return 0d;
+
+        var root = graph.GetRootPlayable(0);
+        return root.IsValid() ? root.GetTime() : 0d;
     }
 
     float ResolveFadeTime(AnimationState state)
@@ -330,11 +334,14 @@ public class DynamicAnimator : MonoBehaviour
         if (state == null)
             return false;
 
-        if (string.Equals(state.id, "Die", StringComparison.Ordinal))
+        if (state.category == AnimationCategory.Death)
             return ReferenceEquals(state, currentState) || ReferenceEquals(state, pendingState);
 
         if (!IsStateLockingMovement(state))
             return false;
+
+        if (ReferenceEquals(state, pendingState))
+            return true;
 
         return IsClipStillPlaying(state);
     }
@@ -356,25 +363,7 @@ public class DynamicAnimator : MonoBehaviour
         if (state.locksMovement)
             return true;
 
-        if (string.Equals(state.id, "Die", StringComparison.Ordinal))
-            return true;
-
-        return !string.IsNullOrEmpty(state.id)
-            && state.id.StartsWith("Attack", StringComparison.Ordinal);
-    }
-
-    static bool ShouldAllowDuringMovementLock(string animationId) =>
-        !string.IsNullOrEmpty(animationId)
-        && (animationId.StartsWith("Attack", StringComparison.Ordinal)
-            || string.Equals(animationId, "Die", StringComparison.Ordinal));
-
-    private AnimationClipPlayable CreatePlayable(AnimationState state)
-    {
-        var playable = AnimationClipPlayable.Create(graph, state.clip);
-        playable.SetSpeed(state.speed);
-        playable.SetTime(0d);
-        playable.SetApplyFootIK(true);
-        return playable;
+        return state.category is AnimationCategory.Combat or AnimationCategory.Death;
     }
 
     private void HandleFade()
@@ -382,8 +371,8 @@ public class DynamicAnimator : MonoBehaviour
         if (!isFading)
             return;
 
-        fadeTimer += Time.deltaTime;
-        float t = Mathf.Clamp01(fadeTimer / currentFadeTime);
+        float elapsed = (float)(GetGraphTime() - fadeStartGraphTime);
+        float t = Mathf.Clamp01(elapsed / currentFadeTime);
 
         mixer.SetInputWeight(currentInput, 1f - t);
         mixer.SetInputWeight(nextInput, t);
@@ -391,47 +380,7 @@ public class DynamicAnimator : MonoBehaviour
         if (t < 1f)
             return;
 
-        if (currentPlayable.IsValid())
-        {
-            mixer.DisconnectInput(currentInput);
-            currentPlayable.Destroy();
-        }
-
-        currentPlayable = nextPlayable;
-        nextPlayable = default;
-        currentState = pendingState;
-        pendingState = null;
-
-        int previousInput = currentInput;
-        currentInput = nextInput;
-        nextInput = previousInput;
-
-        mixer.SetInputWeight(currentInput, 1f);
-        mixer.SetInputWeight(nextInput, 0f);
-
-        isFading = false;
-    }
-
-    private void HandleDeferredRelease()
-    {
-        if (string.IsNullOrWhiteSpace(deferredReleaseAnimationId) || isFading)
-            return;
-
-        if (currentState == null || !string.Equals(currentState.id, deferredReleaseAnimationId, StringComparison.Ordinal) || !currentPlayable.IsValid())
-        {
-            ClearDeferredRelease();
-            return;
-        }
-
-        if (deferredReleaseTargetCycle < 0)
-            deferredReleaseTargetCycle = GetTargetCycleIndex(currentPlayable.GetTime(), currentState);
-
-        if (!HasReachedCycleEnd(currentPlayable.GetTime(), currentState, deferredReleaseTargetCycle))
-            return;
-
-        string nextStateId = ResolveStateFromInput(deferredReleaseFallbackStateId);
-        ClearDeferredRelease();
-        Play(nextStateId);
+        CompleteFadeImmediately();
     }
 
     private void HandleAutoTransition()
@@ -442,172 +391,24 @@ public class DynamicAnimator : MonoBehaviour
         if (currentPlayable.GetTime() < currentState.clip.length)
             return;
 
-        if (TryGetActiveBindingForState(currentState.id, out _, out _))
-        {
-            ForcePlay(currentState.id);
-            return;
-        }
-
         if (!string.IsNullOrWhiteSpace(currentState.nextStateAfterFinish))
         {
             Play(currentState.nextStateAfterFinish);
             return;
         }
 
-        Play(ResolveStateFromInput(defaultState));
-    }
-
-    private string ResolveStateFromInput(string fallbackStateId)
-    {
-        int bestBindingIndex = -1;
-        int bestPriority = int.MinValue;
-        double bestTime = double.MinValue;
-
-        foreach (var pair in activeBindingTimes)
-        {
-            int bindingIndex = pair.Key;
-            if (bindingIndex < 0 || bindingIndex >= inputBindings.Count)
-                continue;
-
-            var binding = inputBindings[bindingIndex];
-            if (string.IsNullOrWhiteSpace(binding.animationId))
-                continue;
-
-            if (binding.priority > bestPriority || (binding.priority == bestPriority && pair.Value > bestTime))
-            {
-                bestBindingIndex = bindingIndex;
-                bestPriority = binding.priority;
-                bestTime = pair.Value;
-            }
-        }
-
-        if (bestBindingIndex >= 0)
-            return inputBindings[bestBindingIndex].animationId;
-
-        return string.IsNullOrWhiteSpace(fallbackStateId) ? defaultState : fallbackStateId;
-    }
-
-    private void ScheduleDeferredRelease(string animationId, string fallbackStateId)
-    {
-        deferredReleaseAnimationId = animationId;
-        deferredReleaseFallbackStateId = fallbackStateId;
-        deferredReleaseTargetCycle = -1;
-    }
-
-    private void CancelDeferredRelease(string animationId)
-    {
-        if (string.Equals(deferredReleaseAnimationId, animationId, StringComparison.Ordinal))
-            ClearDeferredRelease();
-    }
-
-    private void ClearDeferredRelease()
-    {
-        deferredReleaseAnimationId = null;
-        deferredReleaseFallbackStateId = null;
-        deferredReleaseTargetCycle = -1;
-    }
-
-    private bool IsCurrentOrPendingState(string stateId)
-    {
-        if (string.IsNullOrWhiteSpace(stateId))
-            return false;
-
-        return string.Equals(currentState?.id, stateId, StringComparison.Ordinal)
-               || string.Equals(pendingState?.id, stateId, StringComparison.Ordinal);
-    }
-
-    private static int GetTargetCycleIndex(double time, AnimationState state)
-    {
-        if (state?.clip == null || state.clip.length <= Mathf.Epsilon)
-            return 0;
-
-        if (!state.loop)
-            return 1;
-
-        double safeTime = Math.Max(0d, time);
-        return Mathf.FloorToInt((float)(safeTime / state.clip.length)) + 1;
-    }
-
-    private static bool HasReachedCycleEnd(double time, AnimationState state, int targetCycleIndex)
-    {
-        if (state?.clip == null || state.clip.length <= Mathf.Epsilon || targetCycleIndex <= 0)
-            return true;
-
-        if (!state.loop)
-            return time >= state.clip.length;
-
-        return time >= state.clip.length * targetCycleIndex;
+        Play(defaultState);
     }
 
     private bool CanReplayCurrentState(AnimationState requestedState)
     {
-        if (isFading || currentState == null || currentPlayable.IsValid() == false)
+        if (isFading || currentState == null || !currentPlayable.IsValid())
             return false;
 
         if (!ReferenceEquals(currentState, requestedState) && currentState.id != requestedState.id)
             return false;
 
         return !currentState.loop && currentPlayable.GetTime() >= currentState.clip.length;
-    }
-
-    private bool TryGetActiveBindingForState(string stateId, out int bindingIndex, out InputAnimationBinding binding)
-    {
-        bindingIndex = -1;
-        binding = null;
-
-        if (string.IsNullOrWhiteSpace(stateId))
-            return false;
-
-        int bestPriority = int.MinValue;
-        double bestTime = double.MinValue;
-
-        foreach (var pair in activeBindingTimes)
-        {
-            int currentBindingIndex = pair.Key;
-            if (currentBindingIndex < 0 || currentBindingIndex >= inputBindings.Count)
-                continue;
-
-            var currentBinding = inputBindings[currentBindingIndex];
-            if (!string.Equals(currentBinding.animationId, stateId, StringComparison.Ordinal))
-                continue;
-
-            if (currentBinding.priority > bestPriority || (currentBinding.priority == bestPriority && pair.Value > bestTime))
-            {
-                bindingIndex = currentBindingIndex;
-                binding = currentBinding;
-                bestPriority = currentBinding.priority;
-                bestTime = pair.Value;
-            }
-        }
-
-        return binding != null;
-    }
-
-    private static bool ShouldTrackAsActive(InputAnimationBinding binding, InputAction action)
-    {
-        if (binding == null || action == null)
-            return false;
-
-        switch (binding.playbackMode)
-        {
-            case InputPlaybackMode.Hold:
-            case InputPlaybackMode.PressAndHold:
-                return true;
-            case InputPlaybackMode.Press:
-                return false;
-            default:
-                return !binding.legacyPlayOnlyOnPressed
-                       || action.type == InputActionType.Value
-                       || action.type == InputActionType.PassThrough;
-        }
-    }
-
-    private static bool ShouldFinishCurrentCycleOnRelease(InputAnimationBinding binding)
-    {
-        if (binding == null)
-            return false;
-
-        return binding.finishCurrentCycleOnRelease || binding.playbackMode == InputPlaybackMode.PressAndHold;
     }
 
     private bool TryGetState(string stateId, out AnimationState state)
@@ -640,24 +441,45 @@ public class DynamicAnimator : MonoBehaviour
         }
     }
 
-    void ApplyCombatStateDefaults()
+    void ApplyCategoryDefaults()
     {
         foreach (var state in states)
         {
             if (state == null || string.IsNullOrWhiteSpace(state.id))
                 continue;
 
-            if (!state.id.StartsWith("Attack", StringComparison.Ordinal))
-                continue;
+            InferLegacyCategory(state);
 
-            state.loop = false;
-            state.locksMovement = true;
-            if (state.fadeTime <= 0f)
-                state.fadeTime = defaultActionFadeTime;
+            switch (state.category)
+            {
+                case AnimationCategory.Combat:
+                    state.loop = false;
+                    state.locksMovement = true;
+                    if (state.fadeTime <= 0f)
+                        state.fadeTime = defaultActionFadeTime;
+                    if (string.IsNullOrWhiteSpace(state.nextStateAfterFinish))
+                        state.nextStateAfterFinish = defaultState;
+                    break;
 
-            if (string.IsNullOrWhiteSpace(state.nextStateAfterFinish))
-                state.nextStateAfterFinish = defaultState;
+                case AnimationCategory.Death:
+                    state.loop = false;
+                    state.locksMovement = true;
+                    if (state.fadeTime <= 0f)
+                        state.fadeTime = defaultActionFadeTime;
+                    break;
+            }
         }
+    }
+
+    static void InferLegacyCategory(AnimationState state)
+    {
+        if (state.category != AnimationCategory.Locomotion)
+            return;
+
+        if (!string.IsNullOrEmpty(state.id) && state.id.StartsWith("Attack", StringComparison.Ordinal))
+            state.category = AnimationCategory.Combat;
+        else if (string.Equals(state.id, "Die", StringComparison.Ordinal))
+            state.category = AnimationCategory.Death;
     }
 
     private void EnsureValidDefaultState()
@@ -682,11 +504,13 @@ public class DynamicAnimator : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (nextPlayable.IsValid())
-            nextPlayable.Destroy();
+        foreach (var playable in playableCache.Values)
+        {
+            if (playable.IsValid())
+                playable.Destroy();
+        }
 
-        if (currentPlayable.IsValid())
-            currentPlayable.Destroy();
+        playableCache.Clear();
 
         if (graph.IsValid())
             graph.Destroy();

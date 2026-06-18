@@ -1,87 +1,91 @@
 using System;
+using Player.Movement.Modules2;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
 public class MovementBrain : MonoBehaviour
 {
+    const float GroundStickVelocity = -2f;
+    const float AirControlSharpness = 2f;
+
     [Header("Modules")]
-    [SerializeField]
-    protected MovementModule idleModule;
-    [SerializeField]
-    protected MovementModule walkModule;
-    [SerializeField]
-    protected MovementModule sprintModule;
-    [SerializeField]
-    protected MovementModule jumpModule;
+    [SerializeField] MovementModule idleModule;
+    [SerializeField] MovementModule walkModule;
+    [SerializeField] MovementModule sprintModule;
+    [SerializeField] MovementModule jumpModule;
 
     [Header("References")]
-    [SerializeField]
-    public MovementSettingsSO settings;
-    [SerializeField]
-    public Transform cameraTransform;
-    [SerializeField]
-    DynamicAnimator dynamicAnimator;
+    [SerializeField] public MovementSettingsSO settings;
+    [SerializeField] public Transform cameraTransform;
+    [SerializeField] DynamicAnimator dynamicAnimator;
     [SerializeField] string jumpAnimationStateId = "Jump";
 
     CharacterController controller;
     IMovementInput movementInput;
     Vector3 verticalVelocity;
-    Vector3 jumpHorizontalVelocity;
+    Vector3 currentHorizontalVelocity;
     MovementModule activeModule;
-    bool wasGrounded = true;
     bool isAirborne;
     bool inputLocked;
     bool wasMovementLocked;
+    float defaultStepOffset;
 
     public CharacterController Controller => controller;
     public IMovementInput Input => movementInput;
     public MovementState CurrentState => activeModule != null ? activeModule.State : MovementState.Idle;
     public bool IsAirborne => isAirborne;
-    public bool IsGroundedForJump => !inputLocked && !IsMovementLocked && !isAirborne && IsFirmlyGrounded();
+    public bool IsGroundedForJump => !inputLocked && !IsMovementLocked && controller.isGrounded;
     public bool IsMovementLocked => dynamicAnimator != null && dynamicAnimator.IsMovementLocked;
     public float VerticalVelocityY => verticalVelocity.y;
     public event Action JumpStarted;
 
-    public void SetVerticalVelocity(float val) => verticalVelocity.y = val;
+    public void SetVerticalVelocity(float value) => verticalVelocity.y = value;
 
     public void SetInputLocked(bool locked) => inputLocked = locked;
 
-    public void StopHorizontalMovement() => jumpHorizontalVelocity = Vector3.zero;
+    public void StopHorizontalMovement() => currentHorizontalVelocity = Vector3.zero;
 
-    public void StartJump(Vector3 horizontalVelocity)
+    public void StartJump()
     {
-        if (settings == null || isAirborne || IsMovementLocked || inputLocked)
+        if (settings == null || IsMovementLocked || inputLocked || !controller.isGrounded)
             return;
 
         isAirborne = true;
-        jumpHorizontalVelocity = horizontalVelocity;
-        SetVerticalVelocity(Mathf.Sqrt(settings.jumpHeight * -2f * settings.gravity));
+        controller.stepOffset = 0f;
+        verticalVelocity.y = Mathf.Sqrt(settings.jumpHeight * -2f * settings.gravity);
         JumpStarted?.Invoke();
 
-        if (dynamicAnimator != null && !string.IsNullOrEmpty(jumpAnimationStateId))
+        if (dynamicAnimator != null
+            && !string.IsNullOrEmpty(jumpAnimationStateId)
+            && dynamicAnimator.CurrentStateId != jumpAnimationStateId)
             dynamicAnimator.ForcePlay(jumpAnimationStateId);
+    }
+
+    public void RotateTowards(Vector3 direction, float rotationSpeed)
+    {
+        if (direction.sqrMagnitude < 0.01f)
+            return;
+
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            Quaternion.LookRotation(direction),
+            rotationSpeed * Time.deltaTime);
     }
 
     void Awake()
     {
         controller = GetComponent<CharacterController>();
+        defaultStepOffset = controller.stepOffset;
         movementInput = GetComponent<IMovementInput>();
 
-        if (dynamicAnimator == null)
-            dynamicAnimator = GetComponent<DynamicAnimator>() ?? GetComponentInChildren<DynamicAnimator>();
+        idleModule ??= GetComponent<IdleModule>();
+        walkModule ??= GetComponent<WalkModule>();
+        sprintModule ??= GetComponent<SprintModule>();
+        jumpModule ??= GetComponent<JumpModule>();
+        dynamicAnimator ??= GetComponent<DynamicAnimator>() ?? GetComponentInChildren<DynamicAnimator>();
 
         if (dynamicAnimator != null && GetComponent<PlayerLocomotionAnimator>() == null)
             gameObject.AddComponent<PlayerLocomotionAnimator>();
-
-        if (walkModule == null)
-            walkModule = GetComponent<WalkModule>();
-
-        if (walkModule == null)
-            walkModule = gameObject.AddComponent<WalkModule>();
-
-        ResolveModule(ref idleModule, GetComponent<IdleModule>());
-        ResolveModule(ref sprintModule, GetComponent<SprintModule>());
-        ResolveModule(ref jumpModule, GetComponent<JumpModule>());
 
         if (settings == null)
             Debug.LogError("MovementBrain requires MovementSettingsSO.", this);
@@ -98,66 +102,70 @@ public class MovementBrain : MonoBehaviour
         if (movementInput == null || settings == null)
             return;
 
+        SyncAirborneState();
+
         if (IsMovementLocked && !wasMovementLocked)
-            StopHorizontalMovement();
+            currentHorizontalVelocity = Vector3.zero;
 
         wasMovementLocked = IsMovementLocked;
 
-        UpdateAirborneState();
-
         if (!inputLocked && !IsMovementLocked)
-            UpdateActiveModule();
+        {
+            TryJump();
+            SelectGroundModule();
+        }
         else if (isAirborne)
             activeModule = idleModule;
 
-        if (!inputLocked && !IsMovementLocked && activeModule != null)
-            activeModule.Process(this);
+        if (isAirborne)
+        {
+            if (!inputLocked && !IsMovementLocked && movementInput.MoveVector.sqrMagnitude > 0.04f)
+            {
+                Vector3 airDirection = LocomotionKit.WorldDirection(this, movementInput.MoveVector);
+                float speedInAir = Mathf.Max(settings.walkSpeed, currentHorizontalVelocity.magnitude);
+                Vector3 targetHorizontal = airDirection * speedInAir;
+                currentHorizontalVelocity = Vector3.Lerp(
+                    currentHorizontalVelocity,
+                    targetHorizontal,
+                    Time.deltaTime * AirControlSharpness);
+            }
+        }
+        else
+        {
+            Vector3 targetHorizontal = Vector3.zero;
+            if (!inputLocked && !IsMovementLocked && activeModule != null)
+                targetHorizontal = activeModule.Process(this);
 
-        if (!IsMovementLocked)
-            ApplyJumpMomentum();
+            currentHorizontalVelocity = targetHorizontal;
+        }
 
         ApplyGravity();
-        UpdateAirborneState();
+
+        Vector3 finalVelocity = currentHorizontalVelocity + new Vector3(0f, verticalVelocity.y, 0f);
+        controller.Move(finalVelocity * Time.deltaTime);
+
+        if (!IsMovementLocked && currentHorizontalVelocity.sqrMagnitude > 0.01f)
+            RotateTowards(currentHorizontalVelocity.normalized, settings.rotationSpeed);
 
         if (TryGetComponent(out StatComponent stats))
-        {
             stats.StaminaRegenPaused = CurrentState == MovementState.Sprinting;
-        }
     }
 
-    void UpdateAirborneState()
+    void TryJump()
     {
-        if (controller.isGrounded && verticalVelocity.y <= 0.05f)
-            isAirborne = false;
-        else
-            isAirborne = true;
+        if (jumpModule == null || !jumpModule.CanEnter(this))
+            return;
+
+        jumpModule.Process(this);
     }
 
-    bool IsFirmlyGrounded() =>
-        controller.isGrounded && verticalVelocity.y <= 0.05f;
-
-    static void ResolveModule<T>(ref MovementModule slot, T component) where T : MovementModule
+    void SelectGroundModule()
     {
-        if (component != null)
-            slot = component;
-    }
-
-    void UpdateActiveModule()
-    {
-        if (IsGroundedForJump && jumpModule != null && jumpModule.CanEnter(this))
-            jumpModule.Process(this);
-
         if (isAirborne)
         {
             activeModule = idleModule;
-            wasGrounded = false;
             return;
         }
-
-        if (!wasGrounded)
-            jumpHorizontalVelocity = Vector3.zero;
-
-        wasGrounded = true;
 
         if (sprintModule != null && sprintModule.CanEnter(this))
             activeModule = sprintModule;
@@ -167,31 +175,22 @@ public class MovementBrain : MonoBehaviour
             activeModule = idleModule;
     }
 
-    void ApplyJumpMomentum()
+    void SyncAirborneState()
     {
-        if (!isAirborne || jumpHorizontalVelocity.sqrMagnitude <= 0.0001f)
-            return;
+        bool wasAirborne = isAirborne;
+        isAirborne = !controller.isGrounded;
 
-        controller.Move(jumpHorizontalVelocity * Time.deltaTime);
+        if (!wasAirborne && isAirborne)
+            controller.stepOffset = 0f;
+        else if (wasAirborne && !isAirborne)
+            controller.stepOffset = defaultStepOffset;
     }
 
     void ApplyGravity()
     {
-        if (IsFirmlyGrounded() && verticalVelocity.y < 0)
-            verticalVelocity.y = -2f;
-
-        verticalVelocity.y += settings.gravity * Time.deltaTime;
-        controller.Move(verticalVelocity * Time.deltaTime);
-    }
-
-    public void RotateTowards(Vector3 direction, float rotSpeed)
-    {
-        if (direction.magnitude < 0.1f)
-            return;
-
-        transform.rotation = Quaternion.Slerp(
-            transform.rotation,
-            Quaternion.LookRotation(direction),
-            rotSpeed * Time.deltaTime);
+        if (controller.isGrounded && verticalVelocity.y <= 0f)
+            verticalVelocity.y = GroundStickVelocity;
+        else
+            verticalVelocity.y += settings.gravity * Time.deltaTime;
     }
 }

@@ -9996,19 +9996,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SprintModule
   rotationSpeed: 10
---- !u!114 &604360246
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 604360239}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 425141474b1e3a94b8a85aa8513de314, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RunModule
-  rotationSpeed: 10
 --- !u!114 &604360247
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10046,7 +10033,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 62da556dec893478a8505aa912dd83dd, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GlideModule
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAudioController
   movementBrain: {fileID: 604360250}
   dynamicAnimator: {fileID: 604360252}
   deathHandler: {fileID: 604360242}

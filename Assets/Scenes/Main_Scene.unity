@@ -888,6 +888,7 @@ MonoBehaviour:
   states:
   - id: Idle
     clip: {fileID: 7400000, guid: e09bb80dc48c401499bb50756f0e0ef7, type: 3}
+    category: 0
     loop: 1
     fadeTime: 0.15
     speed: 1
@@ -895,6 +896,7 @@ MonoBehaviour:
     locksMovement: 0
   - id: Run
     clip: {fileID: 7400000, guid: 9484889ca71f47daa5169249032175d9, type: 3}
+    category: 0
     loop: 1
     fadeTime: 0.15
     speed: 1
@@ -902,6 +904,7 @@ MonoBehaviour:
     locksMovement: 0
   - id: Attack01
     clip: {fileID: 7400000, guid: 32d6e435bf004395b7be6f64caaf7990, type: 3}
+    category: 0
     loop: 1
     fadeTime: 0.15
     speed: 1
@@ -909,6 +912,7 @@ MonoBehaviour:
     locksMovement: 0
   - id: WalkFWD
     clip: {fileID: 7400000, guid: ff26e30db21e482dae66b0ebfa98c567, type: 3}
+    category: 0
     loop: 1
     fadeTime: 0.15
     speed: 1
@@ -916,6 +920,7 @@ MonoBehaviour:
     locksMovement: 0
   - id: Die
     clip: {fileID: 7400000, guid: 83b8ba7bebe24a30a3f875bd9bdf9654, type: 3}
+    category: 0
     loop: 0
     fadeTime: 0.15
     speed: 1
@@ -923,15 +928,6 @@ MonoBehaviour:
     locksMovement: 0
   defaultLocomotionFadeTime: 0.15
   defaultActionFadeTime: 0.08
-  inputBindings:
-  - action: {fileID: 0}
-    animationId: 
-    playbackMode: 0
-    legacyPlayOnlyOnPressed: 0
-    forcePlay: 0
-    priority: 0
-    releaseStateId: 
-    finishCurrentCycleOnRelease: 0
 --- !u!195 &78926087
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -10079,20 +10075,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1eda3c54be0e8c469615c9307048481, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SprintModule
-  rotationSpeed: 10
---- !u!114 &604360246
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 604360239}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 425141474b1e3a94b8a85aa8513de314, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RunModule
-  rotationSpeed: 10
 --- !u!114 &604360247
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10105,7 +10087,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a4058e4361efaf4b8bc48df1e27847e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JumpModule
-  rotationSpeed: 10
 --- !u!114 &604360248
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10118,7 +10099,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88151ffcdae6255428f8756395ec900a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IdleModule
-  rotationSpeed: 10
 --- !u!114 &604360249
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10130,7 +10110,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 62da556dec893478a8505aa912dd83dd, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GlideModule
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAudioController
   movementBrain: {fileID: 604360250}
   dynamicAnimator: {fileID: 604360252}
   deathHandler: {fileID: 604360242}
@@ -10173,7 +10153,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MovementBrain
   idleModule: {fileID: 604360248}
-  walkModule: {fileID: 0}
+  walkModule: {fileID: 604360265}
   sprintModule: {fileID: 604360245}
   jumpModule: {fileID: 604360247}
   settings: {fileID: 11400000, guid: 7fc9d2d93448ab64c98b1d2a01b5264f, type: 2}
@@ -10221,6 +10201,7 @@ MonoBehaviour:
   states:
   - id: Idle
     clip: {fileID: 1827226128182048838, guid: 0308cf4e83cf517488b60af58b290fe0, type: 3}
+    category: 0
     loop: 1
     fadeTime: 0
     speed: 1
@@ -10228,6 +10209,7 @@ MonoBehaviour:
     locksMovement: 0
   - id: Walk
     clip: {fileID: 1827226128182048838, guid: 8bcf8cfd96eeb4040a37e9e44d89a841, type: 3}
+    category: 0
     loop: 1
     fadeTime: 0
     speed: 1
@@ -10235,6 +10217,7 @@ MonoBehaviour:
     locksMovement: 0
   - id: Run
     clip: {fileID: 1827226128182048838, guid: b40499a5812feac4aa7b77f7fbbac11f, type: 3}
+    category: 0
     loop: 1
     fadeTime: 0
     speed: 1
@@ -10242,6 +10225,7 @@ MonoBehaviour:
     locksMovement: 0
   - id: Attack
     clip: {fileID: 1827226128182048838, guid: db509ad77f9b4f84a8eb1989f589b24c, type: 3}
+    category: 0
     loop: 0
     fadeTime: 0
     speed: 1
@@ -10249,13 +10233,15 @@ MonoBehaviour:
     locksMovement: 0
   - id: Jump
     clip: {fileID: 1827226128182048838, guid: dd2792b75214ec24793124d449bacd3a, type: 3}
-    loop: 1
+    category: 0
+    loop: 0
     fadeTime: 0
     speed: 1
     nextStateAfterFinish: Idle
     locksMovement: 0
   - id: WalkBack
     clip: {fileID: 1827226128182048838, guid: 320724e8ef4b93d458cfaace85217d1c, type: 3}
+    category: 0
     loop: 1
     fadeTime: 0
     speed: 1
@@ -10263,6 +10249,7 @@ MonoBehaviour:
     locksMovement: 0
   - id: Die
     clip: {fileID: 1827226128182048838, guid: 5940bb0b55717a746bbbe4d3e47e7e39, type: 3}
+    category: 0
     loop: 1
     fadeTime: 0
     speed: 0.7
@@ -10270,15 +10257,6 @@ MonoBehaviour:
     locksMovement: 0
   defaultLocomotionFadeTime: 0.15
   defaultActionFadeTime: 0.08
-  inputBindings:
-  - action: {fileID: 1120369429361536294, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-    animationId: Attack
-    playbackMode: 3
-    legacyPlayOnlyOnPressed: 1
-    forcePlay: 0
-    priority: 0
-    releaseStateId: 
-    finishCurrentCycleOnRelease: 1
 --- !u!114 &604360253
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10460,6 +10438,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PersistentSceneObject
   keepOnlyOneInstance: 1
   uniqueId: 
+--- !u!114 &604360265
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 604360239}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3f6080b6255a48e094398d9c677cf18, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Player.Movement.Modules2.WalkModule
 --- !u!4 &607893064 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7751728683875466827, guid: 9d08f84985bc2f64e84aff02adb115cc, type: 3}
@@ -30536,9 +30526,6 @@ PrefabInstance:
       addedObject: {fileID: 604360247}
     - targetCorrespondingSourceObject: {fileID: 8189980434977739222, guid: 2dfbb63c9cdf7504faf4ff26b0581598, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 604360246}
-    - targetCorrespondingSourceObject: {fileID: 8189980434977739222, guid: 2dfbb63c9cdf7504faf4ff26b0581598, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 604360245}
     - targetCorrespondingSourceObject: {fileID: 8189980434977739222, guid: 2dfbb63c9cdf7504faf4ff26b0581598, type: 3}
       insertIndex: -1
@@ -30567,6 +30554,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8189980434977739222, guid: 2dfbb63c9cdf7504faf4ff26b0581598, type: 3}
       insertIndex: -1
       addedObject: {fileID: 604360263}
+    - targetCorrespondingSourceObject: {fileID: 8189980434977739222, guid: 2dfbb63c9cdf7504faf4ff26b0581598, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 604360265}
     - targetCorrespondingSourceObject: {fileID: 7229817629626485462, guid: 2dfbb63c9cdf7504faf4ff26b0581598, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1137357570}
@@ -30623,6 +30613,8 @@ MonoBehaviour:
   triggerInteraction: 2
   ownerRoot: {fileID: 604360255}
   ownerStats: {fileID: 604360253}
+  dynamicAnimator: {fileID: 0}
+  attackAnimationStateId: Attack
 --- !u!1001 &2011570037
 PrefabInstance:
   m_ObjectHideFlags: 0

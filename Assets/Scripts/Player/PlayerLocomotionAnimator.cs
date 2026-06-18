@@ -1,10 +1,8 @@
 using UnityEngine;
 
-/// <summary>
-/// Drives Idle/Walk/Run clips from sustained movement, not brief input taps.
-/// </summary>
 [DefaultExecutionOrder(50)]
-public class PlayerLocomotionAnimator : MonoBehaviour {
+public class PlayerLocomotionAnimator : MonoBehaviour
+{
     [SerializeField] MovementBrain movementBrain;
     [SerializeField] DynamicAnimator dynamicAnimator;
     [SerializeField] string idleAnimationStateId = "Idle";
@@ -12,42 +10,42 @@ public class PlayerLocomotionAnimator : MonoBehaviour {
     [SerializeField] string walkBackAnimationStateId = "WalkBack";
     [SerializeField] string runAnimationStateId = "Run";
     [SerializeField] float minMoveSpeed = 0.15f;
-    [SerializeField] float locomotionStartDelay = 0.00f;
+    [SerializeField] float locomotionStartDelay = 0f;
     [SerializeField] float walkBackDotThreshold = -0.35f;
 
     string currentLocomotionId;
-    Vector3 lastPosition;
     float sustainedMoveTime;
 
-    void Awake() {
+    void Awake()
+    {
         if (movementBrain == null)
             movementBrain = GetComponent<MovementBrain>();
 
         if (dynamicAnimator == null)
             dynamicAnimator = GetComponent<DynamicAnimator>() ?? GetComponentInChildren<DynamicAnimator>();
-
-        lastPosition = transform.position;
     }
 
-    void LateUpdate() {
+    void LateUpdate()
+    {
         SyncLocomotion();
-        lastPosition = transform.position;
     }
 
-    void SyncLocomotion() {
+    void SyncLocomotion()
+    {
         if (dynamicAnimator == null || movementBrain == null)
             return;
 
-        if (dynamicAnimator.IsMovementLocked || movementBrain.IsAirborne) {
+        if (dynamicAnimator.IsMovementLocked || movementBrain.IsAirborne)
+        {
             sustainedMoveTime = 0f;
             currentLocomotionId = null;
             return;
         }
 
-        Vector3 delta = transform.position - lastPosition;
-        delta.y = 0f;
-        float speed = Time.deltaTime > 0.0001f ? delta.magnitude / Time.deltaTime : 0f;
+        Vector3 currentVelocity = movementBrain.Controller.velocity;
+        currentVelocity.y = 0f;
 
+        float speed = currentVelocity.magnitude;
         bool hasMoveInput = HasMoveInput();
         bool isActuallyMoving = speed >= minMoveSpeed;
 
@@ -58,7 +56,7 @@ public class PlayerLocomotionAnimator : MonoBehaviour {
 
         string nextId = idleAnimationStateId;
         if (hasMoveInput && isActuallyMoving && sustainedMoveTime >= locomotionStartDelay)
-            nextId = ResolveMovingState(delta);
+            nextId = ResolveMovingState(currentVelocity);
 
         if (string.Equals(currentLocomotionId, nextId, System.StringComparison.Ordinal))
             return;
@@ -74,16 +72,17 @@ public class PlayerLocomotionAnimator : MonoBehaviour {
     bool HasMoveInput() =>
         movementBrain.Input != null && movementBrain.Input.MoveVector.sqrMagnitude > 0.04f;
 
-    string ResolveMovingState(Vector3 delta) {
+    string ResolveMovingState(Vector3 velocity)
+    {
         MovementState state = movementBrain.CurrentState;
 
         if (state == MovementState.Sprinting || state == MovementState.Running)
             return runAnimationStateId;
 
-        if (delta.sqrMagnitude > 0.0001f) {
-            float forwardDot = Vector3.Dot(transform.forward, delta.normalized);
-            if (forwardDot <= walkBackDotThreshold
-                && !string.IsNullOrEmpty(walkBackAnimationStateId))
+        if (velocity.sqrMagnitude > 0.0001f)
+        {
+            float forwardDot = Vector3.Dot(transform.forward, velocity.normalized);
+            if (forwardDot <= walkBackDotThreshold && !string.IsNullOrEmpty(walkBackAnimationStateId))
                 return walkBackAnimationStateId;
         }
 

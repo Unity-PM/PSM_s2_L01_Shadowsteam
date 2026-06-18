@@ -1,10 +1,13 @@
 using UnityEngine;
 
-public class IdleModule : MovementModule
+namespace Player.Movement.Modules2
 {
-    public override MovementState State => MovementState.Idle;
+    public class IdleModule : MovementModule
+    {
+        public override MovementState State => MovementState.Idle;
 
-    public override bool CanEnter(MovementBrain brain) => true;
+        public override bool CanEnter(MovementBrain brain) => true;
 
-    public override void Process(MovementBrain brain) { }
+        public override Vector3 Process(MovementBrain brain) => Vector3.zero;
+    }
 }

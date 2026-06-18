@@ -19,6 +19,8 @@ public class CombatComponent : MonoBehaviour {
     [SerializeField] Transform attackOrigin;
     [SerializeField] StatComponent attackerStats;
     [SerializeField] PlayerAudioController playerAudio;
+    [SerializeField] DynamicAnimator dynamicAnimator;
+    [SerializeField] string attackAnimationStateId = "Attack";
 
 #if ENABLE_INPUT_SYSTEM
     [Header("Optional: тот же Input Action, что удара в DynamicAnimator")]
@@ -39,6 +41,9 @@ public class CombatComponent : MonoBehaviour {
 
         if (playerAudio == null)
             playerAudio = GetComponent<PlayerAudioController>();
+
+        if (dynamicAnimator == null)
+            dynamicAnimator = GetComponent<DynamicAnimator>() ?? GetComponentInChildren<DynamicAnimator>();
     }
 
     void OnEnable() {
@@ -74,6 +79,10 @@ public class CombatComponent : MonoBehaviour {
             return;
 
         cooldownTimer = attackCooldown;
+
+        if (dynamicAnimator != null && !string.IsNullOrEmpty(attackAnimationStateId))
+            dynamicAnimator.ForcePlay(attackAnimationStateId);
+
         playerAudio?.PlayAttackSwing();
 
         Vector3 forward = attackOrigin.forward;

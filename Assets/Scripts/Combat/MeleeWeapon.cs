@@ -42,8 +42,15 @@ public class MeleeWeapon : MonoBehaviour
     [SerializeField] private Transform ownerRoot;
     [SerializeField] private StatComponent ownerStats;
 
+    [Header("Animation")]
+    [SerializeField] private DynamicAnimator dynamicAnimator;
+    [SerializeField] private string attackAnimationStateId = "Attack";
+    [SerializeField] private bool syncCooldownToAttackAnimation = true;
+    [SerializeField] private float attackAnimationEndPadding = 0.05f;
+
     private readonly HashSet<StatComponent> damagedTargets = new HashSet<StatComponent>();
     private float cooldownTimer;
+    private float attackInterval;
     private float hitTimer;
     private Vector3 previousWeaponProbePosition;
     private bool hasPreviousWeaponProbePosition;
@@ -77,8 +84,27 @@ public class MeleeWeapon : MonoBehaviour
         if (ownerRoot == null)
             ownerRoot = ownerStats != null ? ownerStats.transform : transform.root;
 
+        if (dynamicAnimator == null && ownerRoot != null)
+            dynamicAnimator = ownerRoot.GetComponent<DynamicAnimator>() ?? ownerRoot.GetComponentInChildren<DynamicAnimator>();
+
         previousWeaponProbePosition = GetWeaponProbePosition();
         hasPreviousWeaponProbePosition = true;
+    }
+
+    private void Start()
+    {
+        ResolveAttackInterval();
+    }
+
+    private void ResolveAttackInterval()
+    {
+        attackInterval = cooldown;
+
+        if (!syncCooldownToAttackAnimation || dynamicAnimator == null || string.IsNullOrEmpty(attackAnimationStateId))
+            return;
+
+        if (dynamicAnimator.TryGetClipLength(attackAnimationStateId, out float clipLength))
+            attackInterval = Mathf.Max(cooldown, clipLength - attackAnimationEndPadding);
     }
 
     private void OnEnable()
@@ -127,22 +153,46 @@ public class MeleeWeapon : MonoBehaviour
         if (attackQueued)
         {
             attackQueued = false;
-            Attack();
+            TryAttack();
         }
-#endif
-
+        else if (useKeyInput && attackAction == null && WasAttackKeyPressedThisFrame())
+            TryAttack();
+#else
         if (useKeyInput && WasAttackKeyPressedThisFrame())
-            Attack();
+            TryAttack();
+#endif
+    }
+
+    private void TryAttack()
+    {
+        if (!CanAttack())
+            return;
+
+        Attack();
+    }
+
+    private bool CanAttack()
+    {
+        if (cooldownTimer > 0f)
+            return false;
+
+        if (dynamicAnimator == null || string.IsNullOrEmpty(attackAnimationStateId))
+            return true;
+
+        return dynamicAnimator.CanRestartState(attackAnimationStateId);
     }
 
     public void Attack()
     {
-        if (cooldownTimer > 0f)
+        if (!CanAttack())
             return;
 
-        cooldownTimer = cooldown;
+        cooldownTimer = attackInterval;
         damagedTargets.Clear();
         hitTimer = Mathf.Max(0.02f, hitActiveTime);
+
+        if (dynamicAnimator != null && !string.IsNullOrEmpty(attackAnimationStateId))
+            dynamicAnimator.ForcePlay(attackAnimationStateId);
 
         previousWeaponProbePosition = GetWeaponProbePosition();
         hasPreviousWeaponProbePosition = true;

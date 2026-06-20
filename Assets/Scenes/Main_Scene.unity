@@ -1465,7 +1465,9 @@ MonoBehaviour:
   titleText: Pause
   subtitleText: Game is paused, you always can continue the game or LEAVE IT ALONE!
   resumeText: Resume
+  mainMenuText: TO THE MAIN MENU
   quitText: Exit! SHIFT STRUCTURE!
+  mainMenuSceneName: MainMenuScene
   unlockCursorOnPause: 1
   lockCursorOnResume: 1
   pauseAudioListener: 0
@@ -15216,7 +15218,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 9.10208e-12, y: 6.061499e+22, z: 1.1430668e+27, w: 1.5787705e-19}
+  m_BoundingSphereOverride: {x: 1e-45, y: 3e-45, z: 4e-45, w: 0}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ForceVisible: 0

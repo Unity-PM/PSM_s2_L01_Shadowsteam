@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 #if ENABLE_INPUT_SYSTEM
@@ -22,7 +23,11 @@ public class PauseMenuController : MonoBehaviour
     [SerializeField] private string titleText = "Пауза";
     [SerializeField] private string subtitleText = "Игра остановлена";
     [SerializeField] private string resumeText = "Продолжить";
+    [SerializeField] private string mainMenuText = "В главное меню";
     [SerializeField] private string quitText = "Выйти из игры";
+
+    [Header("Scenes")]
+    [SerializeField] private string mainMenuSceneName = "MainMenuScene";
 
     [Header("Behaviour")]
     [SerializeField] private bool unlockCursorOnPause = true;
@@ -146,6 +151,52 @@ public class PauseMenuController : MonoBehaviour
         SetMenuVisible(false);
     }
 
+    public void BackToMainMenu()
+    {
+        if (string.IsNullOrEmpty(mainMenuSceneName))
+        {
+            Debug.LogError("PauseMenuController: 'Main Menu Scene Name' is empty.", this);
+            return;
+        }
+
+        // Leaving the paused state: restore time/audio before loading so the menu scene runs normally.
+        isPaused = false;
+        Time.timeScale = 1f;
+        AudioListener.pause = wasAudioListenerPaused;
+
+        UIManager.UnlockCursorForUi();
+
+        SetMenuVisible(false);
+
+        // Returning to the main menu must be a clean start. The player and the gameplay managers are
+        // DontDestroyOnLoad (teleport/persistence system), so a plain scene load would leak them into the
+        // menu where they keep falling (no floor) and then come back below the map -> "falling through
+        // textures". Destroying them here makes the next game load spawn a fresh player.
+        DestroyPersistentObjects();
+
+        SceneManager.LoadScene(mainMenuSceneName);
+    }
+
+    private void DestroyPersistentObjects()
+    {
+        // DontDestroyOnLoad objects live in a dedicated hidden scene. Create a probe, move it there,
+        // then destroy every root object of that scene.
+        GameObject probe = new GameObject("~DDOLProbe");
+        DontDestroyOnLoad(probe);
+        Scene persistentScene = probe.scene;
+
+        GameObject[] roots = persistentScene.GetRootGameObjects();
+        for (int i = 0; i < roots.Length; i++)
+        {
+            if (roots[i] != null && roots[i] != gameObject)
+                Destroy(roots[i]);
+        }
+
+        // If this controller is itself persistent, don't let it survive into the menu either.
+        if (gameObject.scene == persistentScene)
+            Destroy(gameObject);
+    }
+
     public void QuitGame()
     {
         isPaused = false;
@@ -192,7 +243,7 @@ public class PauseMenuController : MonoBehaviour
         panelRect.anchorMax = new Vector2(0.5f, 0.5f);
         panelRect.pivot = new Vector2(0.5f, 0.5f);
         panelRect.anchoredPosition = Vector2.zero;
-        panelRect.sizeDelta = new Vector2(390f, 330f);
+        panelRect.sizeDelta = new Vector2(390f, 405f);
 
         Image panelImage = panelObject.AddComponent<Image>();
         panelImage.color = panelColor;
@@ -207,13 +258,20 @@ public class PauseMenuController : MonoBehaviour
         layout.childAlignment = TextAnchor.UpperCenter;
         layout.childControlWidth = true;
         layout.childForceExpandWidth = true;
-        layout.childControlHeight = false;
+        layout.childControlHeight = true;
         layout.childForceExpandHeight = false;
 
+        // Let the panel grow to fit its content (title + subtitle + buttons) instead of a fixed height,
+        // so adding/removing buttons or longer text never overflows the panel.
+        ContentSizeFitter panelFitter = panelObject.AddComponent<ContentSizeFitter>();
+        panelFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        panelFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
         CreateLabel(panelObject.transform, titleText, titleFontSize, accentColor, FontStyle.Bold, 56f);
-        CreateLabel(panelObject.transform, subtitleText, subtitleFontSize, new Color(1f, 1f, 1f, 0.45f), FontStyle.Normal, 28f);
+        CreateLabel(panelObject.transform, subtitleText, subtitleFontSize, new Color(1f, 1f, 1f, 0.45f), FontStyle.Normal, 44f);
         CreateSpacer(panelObject.transform, 8f);
         CreateButton(panelObject.transform, resumeText, Resume);
+        CreateButton(panelObject.transform, mainMenuText, BackToMainMenu);
         CreateButton(panelObject.transform, quitText, QuitGame);
     }
 

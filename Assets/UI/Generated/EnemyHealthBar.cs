@@ -33,6 +33,8 @@ public class EnemyHealthBar : MonoBehaviour
 
     [Header("Auto-hide")]
     [SerializeField] private float visibleDuration = 3f;
+    [SerializeField] private float deathVisibleDuration = 1.25f;
+    [SerializeField] private float fillAnimationSpeed = 3.5f;
 
     [Header("Occlusion")]
     [SerializeField] private LayerMask occlusionMask = Physics.DefaultRaycastLayers;
@@ -47,6 +49,14 @@ public class EnemyHealthBar : MonoBehaviour
     private bool isFullHealth = true;
     private bool hasBeenDamaged;
     private bool isSubscribed;
+    private float lastKnownHp = -1f;
+    private float lastKnownMaxHp = -1f;
+    private float deathShownAt = float.NegativeInfinity;
+    private RectTransform hpFillRect;
+    private float fullFillWidth;
+    private Vector3 fullFillScale;
+    private float targetFillPercent = 1f;
+    private float displayedFillPercent = 1f;
 
     private void Awake()
     {
@@ -105,6 +115,8 @@ public class EnemyHealthBar : MonoBehaviour
 
     private void LateUpdate()
     {
+        PollStatsForChanges();
+        UpdateSmoothFill();
         UpdateCanvasPosition();
         UpdateVisibility();
     }
@@ -132,7 +144,8 @@ public class EnemyHealthBar : MonoBehaviour
     private void UpdateVisibility()
     {
         if (cam == null) { HideImmediate(); return; }
-        if (stats == null || stats.IsDead) { HideImmediate(); return; }
+        if (stats == null) { HideImmediate(); return; }
+        if (stats.IsDead && Time.time - deathShownAt > deathVisibleDuration) { HideImmediate(); return; }
         if (isFullHealth && hasBeenDamaged && Time.time - lastDamageTime > visibleDuration)
         {
             HideImmediate();
@@ -145,6 +158,12 @@ public class EnemyHealthBar : MonoBehaviour
         if (Vector3.Dot(cam.transform.forward, toTarget) <= 0f) { HideImmediate(); return; }
 
         if (!IsVisibleFromCamera(worldPos)) { HideImmediate(); return; }
+
+        if (stats.IsDead)
+        {
+            canvasGroup.alpha = 1f;
+            return;
+        }
 
         float dist = toTarget.magnitude;
         float distAlpha = 1f - Mathf.InverseLerp(fadeStartDistance, fadeEndDistance, dist);
@@ -218,12 +237,84 @@ public class EnemyHealthBar : MonoBehaviour
         float max = stats.getMaxHP();
         float percent = max > 0f ? current / max : 0f;
 
-        hpFillImage.fillAmount = percent;
+        targetFillPercent = Mathf.Clamp01(percent);
+        if (lastKnownHp < 0f)
+        {
+            displayedFillPercent = targetFillPercent;
+            ApplyFillPercent(displayedFillPercent);
+        }
 
         if (hpText != null)
             hpText.text = $"{Mathf.CeilToInt(current)}/{Mathf.CeilToInt(max)}";
 
         isFullHealth = Mathf.Approximately(percent, 1f);
+        lastKnownHp = current;
+        lastKnownMaxHp = max;
+
+        if (current <= 0f && deathShownAt < 0f)
+        {
+            hasBeenDamaged = true;
+            lastDamageTime = Time.time;
+            deathShownAt = Time.time;
+        }
+    }
+
+    private void PollStatsForChanges()
+    {
+        if (stats == null || hpFillImage == null)
+            return;
+
+        float current = stats.getHP();
+        float max = stats.getMaxHP();
+        if (Mathf.Approximately(current, lastKnownHp) && Mathf.Approximately(max, lastKnownMaxHp))
+            return;
+
+        Refresh();
+
+        if (!isFullHealth)
+        {
+            hasBeenDamaged = true;
+            lastDamageTime = Time.time;
+        }
+    }
+
+    private void UpdateSmoothFill()
+    {
+        if (hpFillImage == null)
+            return;
+
+        if (!Mathf.Approximately(displayedFillPercent, targetFillPercent))
+        {
+            displayedFillPercent = Mathf.MoveTowards(
+                displayedFillPercent,
+                targetFillPercent,
+                Mathf.Max(0.1f, fillAnimationSpeed) * Time.deltaTime);
+        }
+
+        ApplyFillPercent(displayedFillPercent);
+    }
+
+    private void ApplyFillPercent(float percent)
+    {
+        percent = Mathf.Clamp01(percent);
+        hpFillImage.fillAmount = percent;
+
+        if (hpFillRect == null)
+            hpFillRect = hpFillImage.rectTransform;
+        if (hpFillRect == null)
+            return;
+
+        if (fullFillWidth > 0.001f)
+        {
+            Vector2 size = hpFillRect.sizeDelta;
+            size.x = fullFillWidth * percent;
+            hpFillRect.sizeDelta = size;
+            return;
+        }
+
+        Vector3 scale = fullFillScale;
+        scale.x = fullFillScale.x * percent;
+        hpFillRect.localScale = scale;
     }
 
     private bool ResolveUiReferences()
@@ -272,9 +363,27 @@ public class EnemyHealthBar : MonoBehaviour
 
     private void ConfigureFillImage()
     {
-        hpFillImage.type = Image.Type.Filled;
-        hpFillImage.fillMethod = Image.FillMethod.Horizontal;
-        hpFillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
+        hpFillRect = hpFillImage.rectTransform;
+        if (hpFillRect != null)
+        {
+            SetPivotKeepingPosition(hpFillRect, new Vector2(0f, hpFillRect.pivot.y));
+            fullFillWidth = hpFillRect.sizeDelta.x;
+            fullFillScale = hpFillRect.localScale;
+        }
+
+        hpFillImage.type = Image.Type.Simple;
+        hpFillImage.fillAmount = 1f;
+    }
+
+    private static void SetPivotKeepingPosition(RectTransform rect, Vector2 pivot)
+    {
+        if (rect == null || rect.pivot == pivot)
+            return;
+
+        Vector2 size = rect.rect.size;
+        Vector2 deltaPivot = pivot - rect.pivot;
+        rect.pivot = pivot;
+        rect.anchoredPosition += new Vector2(deltaPivot.x * size.x, deltaPivot.y * size.y);
     }
 
     private TextMeshProUGUI CreateHpText()

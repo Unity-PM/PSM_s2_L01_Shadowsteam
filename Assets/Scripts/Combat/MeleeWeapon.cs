@@ -16,9 +16,23 @@ public class MeleeWeapon : MonoBehaviour
 
     [Header("Damage")]
     [SerializeField] private float damage = 30f;
+    [SerializeField] private bool useOwnerAttackStat = true;
+    [SerializeField] private float attackStatMultiplier = 1f;
+    [SerializeField] private bool useCriticalStats = true;
+    [SerializeField] private bool applyTargetDefense = true;
+    [SerializeField] private float defenseStatMultiplier = 1f;
+    [SerializeField] private float minimumDamage = 1f;
     [SerializeField] private float cooldown = 0.35f;
     [SerializeField] private float hitActiveTime = 0.22f;
     [SerializeField] private bool requireEnemyComponent = true;
+    [SerializeField] private bool guaranteeNearbyEnemyHit = true;
+    [SerializeField] private float guaranteedHitRadius = 2.35f;
+    [SerializeField] private float closeRangeOmnidirectionalRadius = 1.15f;
+    [SerializeField, Range(0f, 180f)] private float guaranteedHitAngle = 140f;
+    [SerializeField] private bool requireFacingForGuaranteedHit;
+    [SerializeField] private bool searchEnemyComponentsWhenOverlapMisses = true;
+    [SerializeField] private float minimumGuaranteedHitRadius = 2.75f;
+    [SerializeField] private float guaranteedHitVerticalTolerance = 2.25f;
 
     [Header("Hitbox")]
     [SerializeField] private Transform hitOrigin;
@@ -196,11 +210,14 @@ public class MeleeWeapon : MonoBehaviour
 
         previousWeaponProbePosition = GetWeaponProbePosition();
         hasPreviousWeaponProbePosition = true;
+        TryDamageBestNearbyEnemy();
         ScanForTargets();
     }
 
     private void ScanForTargets()
     {
+        TryDamageBestNearbyEnemy();
+
         if (useOwnerForwardCapsule)
             ScanOwnerForwardCapsule();
 
@@ -276,23 +293,256 @@ public class MeleeWeapon : MonoBehaviour
 
     private void TryDamage(Collider hit)
     {
-        if (hit == null)
+        if (!TryResolveTarget(hit, out StatComponent targetStats))
             return;
+
+        DamageTarget(targetStats);
+    }
+
+    private void TryDamageBestNearbyEnemy()
+    {
+        if (!guaranteeNearbyEnemyHit)
+            return;
+
+        Transform root = ownerRoot != null ? ownerRoot : transform;
+        Vector3 origin = root.position + Vector3.up * attackHeightOffset;
+        float effectiveRadius = GetEffectiveGuaranteedHitRadius();
+        Collider[] hits = Physics.OverlapSphere(origin, effectiveRadius, targetMask, triggerInteraction);
+
+        StatComponent bestTarget = null;
+        float bestScore = float.MaxValue;
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider hit = hits[i];
+            if (!TryResolveTarget(hit, out StatComponent targetStats))
+                continue;
+
+            TrySelectBetterTarget(targetStats, root, origin, effectiveRadius, ref bestTarget, ref bestScore);
+        }
+
+        if (bestTarget == null && searchEnemyComponentsWhenOverlapMisses)
+            TryFindBestEnemyByComponent(root, origin, effectiveRadius, ref bestTarget, ref bestScore);
+
+        if (bestTarget != null)
+            DamageTarget(bestTarget);
+    }
+
+    private void TryFindBestEnemyByComponent(Transform root, Vector3 origin, float effectiveRadius,
+        ref StatComponent bestTarget, ref float bestScore)
+    {
+        Enemy[] enemies = FindObjectsByType<Enemy>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int i = 0; i < enemies.Length; i++)
+        {
+            Enemy enemy = enemies[i];
+            if (enemy == null)
+                continue;
+            if (ownerRoot != null && enemy.transform.IsChildOf(ownerRoot))
+                continue;
+
+            StatComponent targetStats = enemy.GetComponent<StatComponent>();
+            if (targetStats == null || targetStats == ownerStats || targetStats.IsDead)
+                continue;
+
+            TrySelectBetterTarget(targetStats, root, origin, effectiveRadius, ref bestTarget, ref bestScore);
+        }
+    }
+
+    private void TrySelectBetterTarget(StatComponent targetStats, Transform root, Vector3 origin, float effectiveRadius,
+        ref StatComponent bestTarget, ref float bestScore)
+    {
+        if (targetStats == null)
+            return;
+
+        Vector3 targetPoint = GetTargetPoint(targetStats.transform, origin);
+        Vector3 worldOffset = targetPoint - root.position;
+        if (Mathf.Abs(worldOffset.y) > Mathf.Max(0.25f, guaranteedHitVerticalTolerance))
+            return;
+
+        Vector3 flatOffset = worldOffset;
+        flatOffset.y = 0f;
+        float distance = flatOffset.magnitude;
+        if (distance > effectiveRadius)
+            return;
+
+        bool closeEnough = distance <= GetEffectiveCloseRange(effectiveRadius);
+        if (requireFacingForGuaranteedHit && !closeEnough && !IsInsideAttackAngle(root, flatOffset))
+            return;
+
+        float score = distance;
+        if (requireFacingForGuaranteedHit && !closeEnough && flatOffset.sqrMagnitude > 0.001f)
+            score += Vector3.Angle(GetFlatForward(root), flatOffset.normalized) * 0.01f;
+
+        if (score >= bestScore)
+            return;
+
+        bestScore = score;
+        bestTarget = targetStats;
+    }
+
+    private bool TryResolveTarget(Collider hit, out StatComponent targetStats)
+    {
+        targetStats = null;
+        if (hit == null)
+            return false;
 
         if (ownerRoot != null && hit.transform.IsChildOf(ownerRoot))
-            return;
+            return false;
 
-        if (requireEnemyComponent && hit.GetComponentInParent<Enemy>() == null)
-            return;
+        Enemy enemy = hit.GetComponentInParent<Enemy>();
+        if (requireEnemyComponent && enemy == null)
+            return false;
 
-        StatComponent targetStats = hit.GetComponentInParent<StatComponent>();
+        targetStats = hit.GetComponentInParent<StatComponent>();
+        if (targetStats == null && enemy != null)
+            targetStats = enemy.GetComponent<StatComponent>();
         if (targetStats == null || targetStats == ownerStats || targetStats.IsDead)
+            return false;
+
+        return true;
+    }
+
+    private void DamageTarget(StatComponent targetStats)
+    {
+        if (targetStats == null)
             return;
 
         if (!damagedTargets.Add(targetStats))
             return;
 
-        EventBus.Publish(new StatChangeEvent(targetStats, StatType.HP, -damage));
+        EventBus.Publish(new StatChangeEvent(targetStats, StatType.HP, -CalculateDamage(targetStats)));
+
+        if (!targetStats.IsDead)
+            targetStats.GetComponent<EnemyAudioController>()?.PlayHit();
+    }
+
+    private float CalculateDamage(StatComponent targetStats)
+    {
+        float finalDamage = Mathf.Max(0f, damage);
+        StatComponent attackerStats = ResolveOwnerStats();
+
+        if (useOwnerAttackStat && attackerStats != null)
+            finalDamage += Mathf.Max(0f, attackerStats.GetEffectiveStat(StatType.ATK)) * Mathf.Max(0f, attackStatMultiplier);
+
+        if (useCriticalStats && attackerStats != null && RollCritical(attackerStats, out float criticalMultiplier))
+            finalDamage *= criticalMultiplier;
+
+        if (applyTargetDefense && targetStats != null)
+            finalDamage -= Mathf.Max(0f, targetStats.GetEffectiveStat(StatType.DEF)) * Mathf.Max(0f, defenseStatMultiplier);
+
+        return Mathf.Max(minimumDamage, finalDamage);
+    }
+
+    private StatComponent ResolveOwnerStats()
+    {
+        if (ownerStats != null)
+            return ownerStats;
+
+        if (ownerRoot != null)
+            ownerStats = ownerRoot.GetComponent<StatComponent>() ?? ownerRoot.GetComponentInChildren<StatComponent>();
+
+        if (ownerStats == null)
+            ownerStats = GetComponentInParent<StatComponent>();
+
+        return ownerStats;
+    }
+
+    private static bool RollCritical(StatComponent attackerStats, out float multiplier)
+    {
+        multiplier = 1f;
+        if (attackerStats == null)
+            return false;
+
+        float chance = Mathf.Clamp(attackerStats.GetEffectiveStat(StatType.CritChance), 0f, 100f);
+        if (chance <= 0f || Random.value * 100f > chance)
+            return false;
+
+        multiplier = Mathf.Max(1f, attackerStats.GetEffectiveStat(StatType.CritDamage) / 100f);
+        return multiplier > 1f;
+    }
+
+    private bool IsInsideAttackAngle(Transform root, Vector3 flatOffset)
+    {
+        if (flatOffset.sqrMagnitude < 0.001f)
+            return true;
+
+        Vector3 forward = GetFlatForward(root);
+        if (forward.sqrMagnitude < 0.001f)
+            return true;
+
+        return Vector3.Angle(forward, flatOffset.normalized) <= guaranteedHitAngle * 0.5f;
+    }
+
+    private float GetEffectiveGuaranteedHitRadius()
+    {
+        return Mathf.Max(
+            guaranteedHitRadius,
+            minimumGuaranteedHitRadius,
+            attackReach + Mathf.Max(0.25f, attackRadius)
+        );
+    }
+
+    private float GetEffectiveCloseRange(float effectiveRadius)
+    {
+        if (!requireFacingForGuaranteedHit)
+            return effectiveRadius;
+
+        return Mathf.Min(effectiveRadius, Mathf.Max(closeRangeOmnidirectionalRadius, 1.6f));
+    }
+
+    private static Vector3 GetTargetPoint(Transform targetRoot, Vector3 fallback)
+    {
+        if (targetRoot == null)
+            return fallback;
+
+        Collider[] colliders = targetRoot.GetComponentsInChildren<Collider>();
+        Vector3 bestPoint = targetRoot.position;
+        float bestDistance = float.PositiveInfinity;
+        bool foundSolidCollider = false;
+
+        for (int pass = 0; pass < 2; pass++)
+        {
+            bool allowTriggers = pass == 1;
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                Collider targetCollider = colliders[i];
+                if (targetCollider == null || !targetCollider.enabled)
+                    continue;
+                if (!allowTriggers && targetCollider.isTrigger)
+                    continue;
+                if (foundSolidCollider && targetCollider.isTrigger)
+                    continue;
+
+                Vector3 point = targetCollider.ClosestPoint(fallback);
+                float distance = (point - fallback).sqrMagnitude;
+                if (distance >= bestDistance)
+                    continue;
+
+                bestDistance = distance;
+                bestPoint = point;
+                foundSolidCollider = !targetCollider.isTrigger;
+            }
+
+            if (foundSolidCollider || bestDistance < float.PositiveInfinity)
+                return bestPoint;
+        }
+
+        return targetRoot.position;
+    }
+
+    private Vector3 GetFlatForward(Transform root)
+    {
+        Vector3 forward = root != null ? root.forward : transform.forward;
+        forward.y = 0f;
+        if (forward.sqrMagnitude < 0.001f)
+        {
+            forward = transform.forward;
+            forward.y = 0f;
+        }
+
+        if (forward.sqrMagnitude < 0.001f)
+            return Vector3.forward;
+
+        return forward.normalized;
     }
 
     private void GetHitBox(out Vector3 center, out Vector3 halfExtents, out Quaternion rotation)
@@ -460,6 +710,13 @@ public class MeleeWeapon : MonoBehaviour
 
         if (useOwnerForwardCapsule)
             DrawOwnerForwardCapsuleGizmo();
+
+        if (guaranteeNearbyEnemyHit)
+        {
+            Transform root = ownerRoot != null ? ownerRoot : transform;
+            Gizmos.color = new Color(0.2f, 0.75f, 1f, 0.45f);
+            Gizmos.DrawWireSphere(root.position + Vector3.up * attackHeightOffset, GetEffectiveGuaranteedHitRadius());
+        }
 
         if (useWeaponBounds)
         {

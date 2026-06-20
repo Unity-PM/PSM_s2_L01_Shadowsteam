@@ -11,6 +11,29 @@ namespace Platformer {
         [SerializeField] private QuestManager questManager;
         [SerializeField] private string playerTag = "Player";
 
+        string registeredWaypointKey;
+
+        void Awake() {
+            if (questManager == null)
+                questManager = FindFirstObjectByType<QuestManager>();
+        }
+
+        void OnEnable() {
+            RegisterWaypoint();
+        }
+
+        void OnDisable() {
+            UnregisterWaypoint();
+        }
+
+        internal void Configure(string locationId, QuestManager questManager, string playerTag = "Player") {
+            UnregisterWaypoint();
+            this.locationId = locationId;
+            this.questManager = questManager;
+            this.playerTag = playerTag;
+            RegisterWaypoint();
+        }
+
         void OnValidate() {
             Collider col = GetComponent<Collider>();
             if (col != null)
@@ -18,6 +41,8 @@ namespace Platformer {
         }
 
         void OnTriggerEnter(Collider other) {
+            if (questManager == null)
+                questManager = FindFirstObjectByType<QuestManager>();
             if (questManager == null || string.IsNullOrEmpty(locationId))
                 return;
 
@@ -25,6 +50,27 @@ namespace Platformer {
                 return;
 
             questManager.NotifyReachLocationEntered(locationId);
+        }
+
+        void RegisterWaypoint() {
+            if (!isActiveAndEnabled)
+                return;
+
+            string key = QuestWaypointRegistry.KeyForReach(locationId);
+            if (string.IsNullOrEmpty(key) || registeredWaypointKey == key)
+                return;
+
+            UnregisterWaypoint();
+            QuestWaypointRegistry.Register(key, transform);
+            registeredWaypointKey = key;
+        }
+
+        void UnregisterWaypoint() {
+            if (string.IsNullOrEmpty(registeredWaypointKey))
+                return;
+
+            QuestWaypointRegistry.Unregister(registeredWaypointKey, transform);
+            registeredWaypointKey = null;
         }
     }
 }

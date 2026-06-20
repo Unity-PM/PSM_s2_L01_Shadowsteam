@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -56,6 +57,8 @@ public class TeleportTrigger : MonoBehaviour
     private static readonly Dictionary<int, float> CooldownUntilByTarget = new Dictionary<int, float>();
     private Collider triggerCollider;
 
+    public event Action<GameObject> TeleportStarted;
+
     private void Reset()
     {
         triggerCollider = GetComponent<Collider>();
@@ -73,11 +76,7 @@ public class TeleportTrigger : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         GameObject target = ResolveTeleportTarget(other);
-        if (target == null || IsOnCooldown(target))
-            return;
-
-        SetCooldown(target);
-        StartCoroutine(TeleportRoutine(target));
+        StartTeleportIfPossible(target);
     }
 
     public void Teleport(GameObject target)
@@ -85,7 +84,16 @@ public class TeleportTrigger : MonoBehaviour
         if (target == null || IsOnCooldown(target))
             return;
 
+        StartTeleportIfPossible(target);
+    }
+
+    private void StartTeleportIfPossible(GameObject target)
+    {
+        if (target == null || IsOnCooldown(target))
+            return;
+
         SetCooldown(target);
+        TeleportStarted?.Invoke(target);
         StartCoroutine(TeleportRoutine(target));
     }
 

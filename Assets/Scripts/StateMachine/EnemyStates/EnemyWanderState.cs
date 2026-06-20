@@ -27,6 +27,7 @@ namespace Platformer {
 
             agent.isStopped = false;
             agent.updateRotation = true;
+            agent.stoppingDistance = 0.35f;
             agent.speed = enemy.WalkSpeed;
 
             PickNewDestination();

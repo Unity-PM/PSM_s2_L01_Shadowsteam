@@ -13,6 +13,9 @@ namespace Platformer {
         protected internal virtual bool TryProgressReach(string enteredLocationId, ref int slotProgress) =>
             false;
 
+        protected internal virtual bool TryProgressBreakObject(string breakableId, int amount, ref int slotProgress) =>
+            false;
+
         protected internal abstract int GetProgressCap();
     }
 }

@@ -37,6 +37,8 @@ public class UIManager : MonoBehaviour
     #endregion
 
     #region Public API
+    public static bool HasOpenPanel => Instance != null && Instance._currentOpenPanel != null;
+
     public static void UnlockCursorForUi()
     {
         Cursor.lockState = CursorLockMode.None;

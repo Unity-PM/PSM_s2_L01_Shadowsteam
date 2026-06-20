@@ -17,8 +17,7 @@ namespace Platformer {
 
             ResetLocomotionTracking();
             agent.updateRotation = false;
-            agent.isStopped = true;
-            agent.ResetPath();
+            EnemyLocomotion.StopAgent(agent, resetPath: true);
             enemy.TryStartAttack();
         }
 
@@ -26,6 +25,7 @@ namespace Platformer {
             if (agent == null)
                 return;
 
+            EnemyLocomotion.StopAgent(agent, resetPath: false);
             FacePlayerGrounded(enemy.AttackTurnSpeedDegrees);
             enemy.UpdateAttack();
             enemy.TryStartAttack();
@@ -36,7 +36,8 @@ namespace Platformer {
             if (player == null)
                 return;
 
-            Vector3 toPlayer = player.position - enemy.transform.position;
+            Vector3 playerPoint = playerDetector.GetPlayerLookPosition(enemy.transform.position);
+            Vector3 toPlayer = playerPoint - enemy.transform.position;
             toPlayer.y = 0f;
             if (toPlayer.sqrMagnitude < 0.0001f)
                 return;
@@ -54,6 +55,7 @@ namespace Platformer {
 
             agent.updateRotation = true;
             agent.isStopped = false;
+            agent.velocity = Vector3.zero;
         }
     }
 }

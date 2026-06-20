@@ -9,6 +9,10 @@ namespace Platformer {
 
         public string LocationId => locationId;
 
+        internal void Configure(string locationId) {
+            this.locationId = locationId;
+        }
+
         protected internal override bool TryProgressReach(string enteredLocationId, ref int slotProgress) {
             if (slotProgress >= 1)
                 return false;

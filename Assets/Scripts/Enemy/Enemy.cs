@@ -27,8 +27,14 @@ namespace Platformer {
         [SerializeField] float chaseSpeed = 4.8f;
         [SerializeField] float stuckResetSeconds = 1.25f;
 
+        [Header("Stability")]
+        [SerializeField] bool stabilizeRootRigidbody = true;
+        [SerializeField] float maxAgentSpeedMultiplier = 2.5f;
+        [SerializeField] float navMeshRecoveryRadius = 4f;
+
         [Header("Поворот к цели в атаке")]
         [SerializeField] float attackTurnSpeedDegrees = 720f;
+        [SerializeField] float attackCommitRangeBonus = 0.15f;
 
         internal string AnimIdleId => animIdleId;
         internal string AnimWalkId => animWalkId;
@@ -39,19 +45,45 @@ namespace Platformer {
         internal float WalkSpeed => walkSpeed;
         internal float ChaseSpeed => chaseSpeed;
         internal float StuckResetSeconds => stuckResetSeconds;
+        internal bool IsAttackingPlayer => pendingAttackDamage;
+        internal bool IsChasingPlayer => isChasingPlayer;
+        internal bool HasActiveOrRecentAttack(float seconds)
+        {
+            return pendingAttackDamage || Time.time - attackStartedAt <= Mathf.Max(0f, seconds);
+        }
+        internal bool HasActiveOrRecentChase(float seconds)
+        {
+            return isChasingPlayer || Time.unscaledTime - lastChaseActivityTime <= Mathf.Max(0f, seconds);
+        }
+        internal void SetChasingPlayer(bool chasing)
+        {
+            isChasingPlayer = chasing;
+            if (chasing)
+                lastChaseActivityTime = Time.unscaledTime;
+        }
 
         StateMachine stateMachine;
         CountdownTimer attackTimer;
+        EnemyAudioController audioController;
+        Rigidbody rootRigidbody;
 
         bool pendingAttackDamage;
-        float attackStartedAt;
+        bool isChasingPlayer;
+        float attackStartedAt = float.NegativeInfinity;
+        float lastChaseActivityTime = float.NegativeInfinity;
+        Vector3 spawnPosition;
 
         void Awake() {
+            spawnPosition = transform.position;
             if (agent == null) agent = GetComponent<NavMeshAgent>();
             if (playerDetector == null) playerDetector = GetComponent<PlayerDetector>();
             if (clipAnimator == null)
                 clipAnimator = GetComponent<DynamicAnimator>() ?? GetComponentInChildren<DynamicAnimator>();
+            if (audioController == null)
+                audioController = GetComponent<EnemyAudioController>() ?? GetComponentInChildren<EnemyAudioController>();
+            rootRigidbody = GetComponent<Rigidbody>();
 
+            StabilizePhysicsBody();
             EnemyLocomotion.ConfigureAgent(agent, walkSpeed);
         }
 
@@ -77,12 +109,43 @@ namespace Platformer {
         void Any(IState to, IPredicate condition) => stateMachine.AddAnyTransition(to, condition);
 
         void Update() {
+            if (stateMachine == null)
+                return;
+
+            StabilizeAgent();
             stateMachine.Update();
             attackTimer.Tick(Time.deltaTime);
+            StabilizeAgent();
         }
         
         void FixedUpdate() {
+            if (stateMachine == null)
+                return;
+
             stateMachine.FixedUpdate();
+        }
+
+        void OnDisable() {
+            isChasingPlayer = false;
+        }
+
+        void StabilizePhysicsBody() {
+            if (!stabilizeRootRigidbody || rootRigidbody == null)
+                return;
+
+            rootRigidbody.useGravity = false;
+            rootRigidbody.isKinematic = true;
+            rootRigidbody.linearVelocity = Vector3.zero;
+            rootRigidbody.angularVelocity = Vector3.zero;
+            rootRigidbody.constraints |= RigidbodyConstraints.FreezeRotation;
+        }
+
+        void StabilizeAgent() {
+            if (agent == null || !agent.enabled)
+                return;
+
+            EnemyLocomotion.RecoverToNavMesh(agent, spawnPosition, navMeshRecoveryRadius);
+            EnemyLocomotion.ClampVelocity(agent, chaseSpeed * Mathf.Max(1f, maxAgentSpeedMultiplier));
         }
 
         public void TryStartAttack() {
@@ -96,13 +159,14 @@ namespace Platformer {
             pendingAttackDamage = true;
             attackStartedAt = Time.time;
             PlayAttackAnimation();
+            audioController?.PlayAttackSwing();
         }
 
         public void UpdateAttack() {
             if (!pendingAttackDamage)
                 return;
 
-            if (!playerDetector.CanAttackPlayer()) {
+            if (!playerDetector.CanAttackPlayer(attackCommitRangeBonus)) {
                 pendingAttackDamage = false;
                 return;
             }

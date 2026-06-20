@@ -7,6 +7,10 @@ namespace Platformer {
 
         public string NpcId => npcId;
 
+        internal void Configure(string npcId) {
+            this.npcId = npcId;
+        }
+
         protected internal override bool TryProgressTalk(string talkNpcId, ref int slotProgress) {
             if (talkNpcId != npcId)
                 return false;

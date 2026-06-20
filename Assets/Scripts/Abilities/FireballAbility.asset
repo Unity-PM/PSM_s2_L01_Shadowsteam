@@ -13,9 +13,21 @@ MonoBehaviour:
   m_Name: FireballAbility
   m_EditorClassIdentifier: Assembly-CSharp::FireballAbility
   skillId: Fireball
-  manaCost: 5
-  cooldown: 2
+  manaCost: 50
+  cooldown: 5
   allowedStates: 0000000002000000
+  canCastInAnyState: 1
   projectilePrefab: {fileID: 7205872552607845878, guid: 08eea962f9e866f4190f780b77a8193a, type: 3}
   speed: 35
-  damage: 5
+  damage: 100
+  targetSearchRadius: 24
+  targetAimHeight: 1
+  projectileLifetime: 4
+  noTargetLifetime: 1.25
+  homingTurnSpeed: 720
+  projectileVfxPrefab: {fileID: 5435998012328932994, guid: d8703a33a4eb0b84a875202fde23e8f7, type: 3}
+  impactVfxPrefab: {fileID: 358637981425055526, guid: 8eb503696b886e04faff8fc0f480d473, type: 3}
+  launchSound: {fileID: 8300000, guid: 46ea8af401182574496fdb2d65703ad9, type: 3}
+  launchVolume: 1
+  impactSound: {fileID: 8300000, guid: 0a7f454258b54ce49912169a9bd3b7d7, type: 3}
+  impactVolume: 1

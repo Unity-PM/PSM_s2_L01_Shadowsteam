@@ -39,12 +39,18 @@ namespace Platformer {
             if (agent == null || clipAnimator == null || clipAnimator.IsMovementLocked)
                 return;
 
-            float speed = agent.velocity.magnitude;
+            Vector3 velocity = agent.velocity;
+            velocity.y = 0f;
+            Vector3 desiredVelocity = agent.desiredVelocity;
+            desiredVelocity.y = 0f;
+
+            float speed = Mathf.Max(velocity.magnitude, desiredVelocity.magnitude);
+            bool hasMoveIntent = EnemyLocomotion.HasMoveIntent(agent);
             string nextId;
 
-            if (speed < 0.05f)
+            if (!hasMoveIntent && speed < 0.05f)
                 nextId = IdleId;
-            else if (forceRun || speed >= enemy.ChaseSpeed * 0.75f)
+            else if (forceRun || speed >= enemy.ChaseSpeed * 0.55f)
                 nextId = RunId;
             else
                 nextId = WalkId;

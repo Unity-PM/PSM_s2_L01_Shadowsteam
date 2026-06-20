@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03a8aff44875fe349af32fb4a228a801, type: 3}
   m_Name: Enemy_LVL_1
   m_EditorClassIdentifier: Assembly-CSharp::StatSO
-  MaxHP: 25
+  MaxHP: 75
   MaxMP: 10
   MaxStamina: 10
   HPRegen: 0.2

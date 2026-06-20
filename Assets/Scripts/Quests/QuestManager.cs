@@ -13,6 +13,7 @@ namespace Platformer {
         readonly List<QuestRuntimeState> activeQuests = new();
         readonly HashSet<string> completedQuestIds = new();
         readonly Dictionary<string, QuestDefinition> questById = new();
+        QuestProgressSaveData loadedProgressData;
 
         void Awake() {
             BuildRegistryLookup();
@@ -51,6 +52,37 @@ namespace Platformer {
 
         public bool TryGetQuestDefinition(string questId, out QuestDefinition definition) =>
             questById.TryGetValue(questId, out definition);
+
+        internal void RegisterQuestDefinition(QuestDefinition definition, bool replaceExisting = true) {
+            if (definition == null || string.IsNullOrEmpty(definition.QuestId))
+                return;
+
+            if (questById.ContainsKey(definition.QuestId)) {
+                if (!replaceExisting)
+                    return;
+
+                questById[definition.QuestId] = definition;
+            } else {
+                questById.Add(definition.QuestId, definition);
+            }
+
+            bool alreadyInRegistry = false;
+            for (int i = 0; i < questRegistry.Length; i++) {
+                if (questRegistry[i] == definition || questRegistry[i]?.QuestId == definition.QuestId) {
+                    questRegistry[i] = definition;
+                    alreadyInRegistry = true;
+                    break;
+                }
+            }
+
+            if (!alreadyInRegistry) {
+                Array.Resize(ref questRegistry, questRegistry.Length + 1);
+                questRegistry[^1] = definition;
+            }
+
+            RestoreLoadedActiveQuest(definition);
+            QuestJournalChanged?.Invoke();
+        }
 
         public void CopyCompletedQuestIds(List<string> destination) {
             destination.Clear();
@@ -123,6 +155,16 @@ namespace Platformer {
                 o.TryProgressCollect(itemId, amount, ref slot);
 
             ApplyProgress(TryCollectSlot);
+        }
+
+        internal void NotifyObjectBroken(string breakableId, int amount = 1) {
+            if (string.IsNullOrEmpty(breakableId) || activeQuests.Count == 0 || amount <= 0)
+                return;
+
+            bool TryBreakSlot(QuestObjective o, ref int slot) =>
+                o.TryProgressBreakObject(breakableId, amount, ref slot);
+
+            ApplyProgress(TryBreakSlot);
         }
 
         internal void NotifyNpcTalked(string npcId) {
@@ -202,6 +244,7 @@ namespace Platformer {
 
         internal void LoadFromDisk() {
             var data = QuestProgressSaveService.Load();
+            loadedProgressData = data;
             activeQuests.Clear();
             completedQuestIds.Clear();
 
@@ -240,7 +283,7 @@ namespace Platformer {
             ResolveCompletedQuests();
         }
 
-        bool IsQuestActive(string questId) {
+        internal bool IsQuestActive(string questId) {
             foreach (QuestRuntimeState s in activeQuests) {
                 if (s.Definition.QuestId == questId)
                     return true;
@@ -261,6 +304,23 @@ namespace Platformer {
                 }
 
                 questById.Add(def.QuestId, def);
+            }
+        }
+
+        void RestoreLoadedActiveQuest(QuestDefinition definition) {
+            if (loadedProgressData?.activeQuests == null)
+                return;
+            if (completedQuestIds.Contains(definition.QuestId) || IsQuestActive(definition.QuestId))
+                return;
+
+            foreach (ActiveQuestSaveEntry entry in loadedProgressData.activeQuests) {
+                if (entry == null || entry.id != definition.QuestId)
+                    continue;
+
+                int[] normalized = ClampProgressToDefinition(definition, entry.progress);
+                activeQuests.Add(new QuestRuntimeState(definition, normalized));
+                ResolveCompletedQuests();
+                return;
             }
         }
 

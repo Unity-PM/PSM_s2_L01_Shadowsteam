@@ -392,7 +392,9 @@ static class QuestJournalObjectiveText
 			case KillObjective kill:
 				return $"Defeat enemies ({kill.TargetTag}): {current}/{cap}";
 			case CollectObjective collect:
-				return $"Collect {collect.ItemId}: {current}/{cap}";
+				return $"Collect {collect.DisplayName}: {current}/{cap}";
+			case BreakObjectObjective breakObject:
+				return $"Break {breakObject.BreakableId}: {current}/{cap}";
 			case TalkObjective talk:
 				return current >= cap
 					? $"Talk to {talk.NpcId} (done)"

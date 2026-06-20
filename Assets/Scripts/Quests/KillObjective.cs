@@ -10,6 +10,11 @@ namespace Platformer {
         public string TargetTag => targetTag;
         public int RequiredKills => requiredKills;
 
+        internal void Configure(string targetTag, int requiredKills) {
+            this.targetTag = targetTag;
+            this.requiredKills = Mathf.Max(1, requiredKills);
+        }
+
         protected internal override bool TryProgressKill(string killedEnemyTag, ref int slotProgress) {
             if (string.IsNullOrEmpty(targetTag) || killedEnemyTag != targetTag)
                 return false;

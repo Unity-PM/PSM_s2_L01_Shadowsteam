@@ -60,7 +60,7 @@ public class SkillManager : MonoBehaviour
 
     public void CastSkill(string skillId)
     {
-        if (casterStats == null || movementBrain == null)
+        if (casterStats == null)
             return;
 
         if (!skillMap.TryGetValue(skillId, out AbilitySO skill) || skill == null)
@@ -69,7 +69,8 @@ public class SkillManager : MonoBehaviour
         if (cooldownTimers[skillId] > 0 || casterStats.getMP() < skill.manaCost)
             return;
 
-        if (!skill.allowedStates.Contains(movementBrain.CurrentState))
+        if (!skill.canCastInAnyState
+            && (movementBrain == null || !skill.allowedStates.Contains(movementBrain.CurrentState)))
             return;
 
         ExecuteAbilityLogic(skill);

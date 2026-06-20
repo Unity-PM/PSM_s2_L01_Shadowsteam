@@ -114,7 +114,7 @@
     -unity-text-align: middle-center;
 }
 
-    .settings-panel {
+.settings-panel {
     position: absolute;
 
     left: 50%;
@@ -172,8 +172,12 @@ Slider {
     margin-bottom: 16px;
 }
 
-Toggle {
+.volume-value-label {
     color: white;
+
+    font-size: 13px;
+
+    -unity-text-align: middle-center;
 
     margin-bottom: 24px;
 }

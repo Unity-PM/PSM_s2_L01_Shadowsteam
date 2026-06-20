@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 
 /// <summary>
-/// Global gameplay HUD visibility (crosshair, optional overlays).
+/// Global gameplay HUD visibility (HUD overlays).
 /// Register listeners via <see cref="Register"/> / <see cref="Unregister"/>.
 /// </summary>
 public static class GameplayHudVisibility

@@ -21,5 +21,22 @@ namespace Platformer {
         public IReadOnlyList<QuestObjective> Objectives => objectives ?? Array.Empty<QuestObjective>();
         public int ExperienceReward => experienceReward;
         public string NextQuestId => nextQuestId;
+
+        internal void Configure(
+            string questId,
+            string title,
+            string description,
+            QuestCategory category,
+            QuestObjective[] objectives,
+            int experienceReward,
+            string nextQuestId) {
+            this.questId = questId;
+            this.title = title;
+            this.description = description;
+            this.category = category;
+            this.objectives = objectives ?? Array.Empty<QuestObjective>();
+            this.experienceReward = experienceReward;
+            this.nextQuestId = nextQuestId;
+        }
     }
 }

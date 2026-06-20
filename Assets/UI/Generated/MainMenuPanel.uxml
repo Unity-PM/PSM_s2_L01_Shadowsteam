@@ -1,12 +1,12 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
 
-    <Style src="MainMenu.uss" />
+    <Style src="MainMenuPanel.uss" />
 
     <ui:VisualElement class="root-overlay">
 
         <ui:VisualElement class="main-menu-panel">
 
-            <ui:Label text="SHADOWSTREAM"
+            <ui:Label text="SHADOWSTEAM"
                       class="game-title" />
 
             <ui:Label text="A dark fantasy adventure"
@@ -29,16 +29,17 @@
             <ui:Label text="Settings"
                         class="settings-title" />
 
-            <ui:Label text="Master Volume"
+            <ui:Label text="Volume"
                         class="settings-label" />
 
             <ui:Slider name="volume-slider"
                         low-value="0"
-                        high-value="100"
-                        value="80" />
+                        high-value="1"
+                        value="1" />
 
-            <ui:Toggle name="fullscreen-toggle"
-                        text="Fullscreen" />
+            <ui:Label text="100%"
+                      name="volume-value-label"
+                      class="volume-value-label" />
 
             <ui:Button text="Close"
                         name="close-settings-btn"

@@ -39,16 +39,24 @@ public class EnemyAudioController : MonoBehaviour {
     [SerializeField] float footstepVolume = 0.6f;
     [Range(0f, 1f)]
     [SerializeField] float actionVolume = 0.85f;
+    [Range(0f, 1f)]
+    [SerializeField] float actionSpatialBlend = 0.75f;
     [SerializeField] float minDistance = 1f;
     [SerializeField] float maxDistance = 28f;
 
     string lastAnimationStateId;
     float lastAttackSwingTime;
     float lastHitSoundTime;
+    float lastDeathSoundTime;
     bool suppressLocomotion;
     bool isLocomotionLoopPlaying;
 
     void Awake() {
+        ResolveReferences();
+        ConfigureAudioSources();
+    }
+
+    void ResolveReferences() {
         if (dynamicAnimator == null)
             dynamicAnimator = GetComponent<DynamicAnimator>() ?? GetComponentInChildren<DynamicAnimator>();
 
@@ -65,7 +73,9 @@ public class EnemyAudioController : MonoBehaviour {
 
         if (sfxSource == null)
             sfxSource = GetComponent<AudioSource>();
+    }
 
+    void ConfigureAudioSources() {
         ConfigureSpatialSource(sfxSource, false);
 
         if (locomotionLoopSource == null) {
@@ -98,15 +108,21 @@ public class EnemyAudioController : MonoBehaviour {
         if (source == null)
             return;
 
+        source.enabled = true;
+        source.mute = false;
         source.playOnAwake = false;
         source.loop = loop;
-        source.spatialBlend = 1f;
+        source.spatialBlend = loop ? 1f : actionSpatialBlend;
         source.minDistance = minDistance;
         source.maxDistance = maxDistance;
         source.rolloffMode = AudioRolloffMode.Linear;
+        if (!loop)
+            source.volume = masterVolume;
     }
 
     void OnEnable() {
+        ResolveReferences();
+        ConfigureAudioSources();
         EventBus.Subscribe<DeathEvent>(OnDeath);
         EventBus.Subscribe<StatChangeEvent>(OnStatChange);
     }
@@ -143,12 +159,12 @@ public class EnemyAudioController : MonoBehaviour {
         if (locomotionLoopSource == null)
             return;
 
-        if (suppressLocomotion || dynamicAnimator == null || agent == null || !agent.enabled) {
+        if (suppressLocomotion || agent == null || !agent.enabled) {
             StopLocomotionLoop();
             return;
         }
 
-        if (dynamicAnimator.IsMovementLocked || !TryGetLocomotion(out bool isRunning, out _)) {
+        if ((dynamicAnimator != null && dynamicAnimator.IsMovementLocked) || !TryGetLocomotion(out bool isRunning, out _)) {
             StopLocomotionLoop();
             return;
         }
@@ -192,24 +208,24 @@ public class EnemyAudioController : MonoBehaviour {
         isRunning = false;
         speed = 0f;
 
-        if (dynamicAnimator == null)
-            return false;
-
-        string animId = dynamicAnimator.CurrentStateId;
-        if (string.IsNullOrEmpty(animId))
-            return false;
-
-        if (string.Equals(animId, runAnimationStateId, StringComparison.Ordinal)) {
-            isRunning = true;
-        }
-        else if (!string.Equals(animId, walkAnimationStateId, StringComparison.Ordinal)) {
-            return false;
-        }
-
         if (agent != null) {
             Vector3 velocity = agent.velocity;
             velocity.y = 0f;
             speed = velocity.magnitude;
+        }
+
+        if (speed < minMoveSpeed)
+            return false;
+
+        string animId = dynamicAnimator != null ? dynamicAnimator.CurrentStateId : null;
+        if (string.Equals(animId, runAnimationStateId, StringComparison.Ordinal)) {
+            isRunning = true;
+        }
+        else if (string.Equals(animId, walkAnimationStateId, StringComparison.Ordinal)) {
+            isRunning = false;
+        }
+        else {
+            isRunning = enemy != null ? speed >= enemy.ChaseSpeed * 0.65f : speed >= 3f;
         }
 
         return speed >= minMoveSpeed;
@@ -233,6 +249,14 @@ public class EnemyAudioController : MonoBehaviour {
 
         lastHitSoundTime = Time.time;
         PlayAction(hitClip);
+    }
+
+    void TryPlayDeath() {
+        if (deathClip == null || Time.time - lastDeathSoundTime < 0.2f)
+            return;
+
+        lastDeathSoundTime = Time.time;
+        PlayAction(deathClip);
     }
 
     void PlayAction(AudioClip clip) {
@@ -267,10 +291,16 @@ public class EnemyAudioController : MonoBehaviour {
 
         suppressLocomotion = true;
         StopLocomotionLoop();
-        PlayAction(deathClip);
+        TryPlayDeath();
     }
 
     public void PlayAttackSwing() => TryPlayAttackSwing();
 
     public void PlayHit() => TryPlayHit();
+
+    public void PlayDeath() {
+        suppressLocomotion = true;
+        StopLocomotionLoop();
+        TryPlayDeath();
+    }
 }

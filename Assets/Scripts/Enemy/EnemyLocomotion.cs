@@ -7,12 +7,15 @@ namespace Platformer {
             if (agent == null)
                 return;
 
+            agent.updatePosition = true;
             agent.updateRotation = true;
+            agent.updateUpAxis = true;
             agent.autoBraking = true;
             agent.autoRepath = true;
             agent.stoppingDistance = 0.35f;
-            agent.acceleration = 16f;
-            agent.angularSpeed = 420f;
+            agent.acceleration = 24f;
+            agent.angularSpeed = 720f;
+            agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
             agent.speed = walkSpeed;
         }
 
@@ -37,12 +40,20 @@ namespace Platformer {
             if (agent == null)
                 return false;
 
-            if (!NavMesh.SamplePosition(worldTarget, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+            if (!RecoverToNavMesh(agent, agent.transform.position, 3f))
+                return false;
+
+            if (!NavMesh.SamplePosition(worldTarget, out NavMeshHit hit, 3f, NavMesh.AllAreas))
+                return false;
+
+            var path = new NavMeshPath();
+            if (!NavMesh.CalculatePath(agent.transform.position, hit.position, NavMesh.AllAreas, path)
+                || path.status == NavMeshPathStatus.PathInvalid)
                 return false;
 
             agent.isStopped = false;
-            agent.SetDestination(hit.position);
-            return agent.pathStatus != NavMeshPathStatus.PathInvalid;
+            agent.SetPath(path);
+            return true;
         }
 
         public static bool HasReachedDestination(NavMeshAgent agent) {
@@ -61,8 +72,83 @@ namespace Platformer {
             return agent.remainingDistance <= agent.stoppingDistance + 0.05f;
         }
 
+        public static void StopAgent(NavMeshAgent agent, bool resetPath) {
+            if (agent == null || !agent.enabled)
+                return;
+
+            if (agent.isOnNavMesh) {
+                agent.isStopped = true;
+                if (resetPath)
+                    agent.ResetPath();
+            }
+
+            agent.velocity = Vector3.zero;
+            agent.nextPosition = agent.transform.position;
+        }
+
+        public static bool HasMoveIntent(NavMeshAgent agent, float extraDistance = 0.1f) {
+            if (agent == null || !agent.enabled || agent.isStopped)
+                return false;
+
+            if (agent.pathPending)
+                return true;
+
+            Vector3 velocity = agent.velocity;
+            velocity.y = 0f;
+            if (velocity.sqrMagnitude > 0.01f)
+                return true;
+
+            Vector3 desiredVelocity = agent.desiredVelocity;
+            desiredVelocity.y = 0f;
+            if (desiredVelocity.sqrMagnitude > 0.01f)
+                return true;
+
+            if (!agent.hasPath || float.IsInfinity(agent.remainingDistance))
+                return false;
+
+            return agent.remainingDistance > agent.stoppingDistance + extraDistance;
+        }
+
+        public static void ClampVelocity(NavMeshAgent agent, float maxPlanarSpeed) {
+            if (agent == null || !agent.enabled || maxPlanarSpeed <= 0f)
+                return;
+
+            Vector3 velocity = agent.velocity;
+            Vector3 planar = new Vector3(velocity.x, 0f, velocity.z);
+            if (planar.sqrMagnitude <= maxPlanarSpeed * maxPlanarSpeed)
+                return;
+
+            Vector3 clamped = planar.normalized * maxPlanarSpeed;
+            agent.velocity = new Vector3(clamped.x, velocity.y, clamped.z);
+        }
+
+        public static bool RecoverToNavMesh(NavMeshAgent agent, Vector3 fallbackPosition, float sampleRadius) {
+            if (agent == null || !agent.enabled)
+                return false;
+
+            if (agent.isOnNavMesh)
+                return true;
+
+            if (NavMesh.SamplePosition(agent.transform.position, out NavMeshHit agentHit, sampleRadius, NavMesh.AllAreas)) {
+                agent.Warp(agentHit.position);
+                return true;
+            }
+
+            if (NavMesh.SamplePosition(fallbackPosition, out NavMeshHit fallbackHit, sampleRadius, NavMesh.AllAreas)) {
+                agent.Warp(fallbackHit.position);
+                return true;
+            }
+
+            return false;
+        }
+
         public static bool UpdateStuckTimer(NavMeshAgent agent, ref float stuckTimer, ref Vector3 lastPosition, float stuckSeconds) {
-            if (agent == null || agent.isStopped || !agent.hasPath || agent.pathPending) {
+            if (agent == null) {
+                stuckTimer = 0f;
+                return false;
+            }
+
+            if (agent.isStopped || !agent.hasPath || agent.pathPending) {
                 stuckTimer = 0f;
                 lastPosition = agent.transform.position;
                 return false;

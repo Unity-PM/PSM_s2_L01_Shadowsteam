@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: Player_LVL_1
   m_EditorClassIdentifier: Assembly-CSharp::StatSO
   MaxHP: 150
-  MaxMP: 100
-  MaxStamina: 100
-  HPRegen: 10
+  MaxMP: 150
+  MaxStamina: 150
+  HPRegen: 5
   MPRegen: 0.2
-  StaminaRegen: 1
+  StaminaRegen: 10
   ATK: 1
   MAG: 1
   DEF: 1

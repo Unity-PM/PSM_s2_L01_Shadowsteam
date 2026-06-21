@@ -1,0 +1,23 @@
+.stat-bar {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.stat-bar__label {
+    width: 28px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.8);
+}
+.stat-bar__bg {
+    flex-grow: 1;
+    height: 10px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 5px;
+    overflow: hidden;
+}
+.stat-bar__fill {
+    height: 100%;
+    width: 100%;
+    transition-property: width;
+    transition-duration: 0.15s;
+}

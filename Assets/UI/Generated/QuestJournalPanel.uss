@@ -1,0 +1,244 @@
+/* Overlay + shell — matches InventoryPanel */
+.quest-journal-panel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+}
+
+.quest-journal-panel .inner-panel {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    width: 900px;
+    height: 600px;
+    background-color: rgba(15, 18, 35, 0.97);
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: rgba(212, 175, 55, 0.3);
+    border-right-color: rgba(212, 175, 55, 0.3);
+    border-bottom-color: rgba(212, 175, 55, 0.3);
+    border-left-color: rgba(212, 175, 55, 0.3);
+    border-radius: 12px;
+    flex-direction: row;
+    padding: 24px;
+}
+
+/* Two-column layout — inventory left-column / right-column */
+.quest-journal-panel .left-column {
+    flex-grow: 1;
+    margin-right: 24px;
+    min-width: 280px;
+    max-width: 360px;
+    flex-shrink: 0;
+}
+
+.quest-journal-panel .right-column {
+    flex-grow: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.quest-journal-panel .header-label {
+    color: #D4AF37;
+    font-size: 20px;
+    margin-bottom: 16px;
+}
+
+/* Quest list — item-slot cards + navbar hover/active */
+.quest-list {
+    flex-grow: 1;
+}
+
+.quest-list .unity-scroll-view__content-container {
+    padding-right: 4px;
+}
+
+.quest-list-item {
+    flex-direction: column;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.1);
+    border-right-color: rgba(255, 255, 255, 0.1);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+    border-left-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.quest-list-item:hover {
+    background-color: rgba(212, 175, 55, 0.15);
+}
+
+.quest-list-item--selected {
+    background-color: rgba(212, 175, 55, 0.18);
+    border-top-color: rgba(212, 175, 55, 0.6);
+    border-right-color: rgba(212, 175, 55, 0.6);
+    border-bottom-color: rgba(212, 175, 55, 0.6);
+    border-left-color: rgba(212, 175, 55, 0.6);
+}
+
+.quest-list-item--selected .quest-list-item__title {
+    color: #D4AF37;
+}
+
+.quest-list-item__title {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.quest-list-item__meta {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 11px;
+}
+
+/* Right detail — item-name / item-type / item-description */
+.quest-title {
+    color: #D4AF37;
+    font-size: 22px;
+    margin-bottom: 4px;
+}
+
+.quest-status {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: 4px;
+}
+
+.quest-status--active {
+    color: #7ec8e3;
+}
+
+.quest-status--completed {
+    color: #8fd694;
+}
+
+.quest-category {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: 12px;
+}
+
+.quest-journal-panel .divider {
+    height: 1px;
+    background-color: rgba(212, 175, 55, 0.25);
+    margin-bottom: 12px;
+}
+
+.quest-description {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    white-space: normal;
+    margin-bottom: 16px;
+}
+
+.section-label {
+    color: #D4AF37;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+/* Objectives — stat-preview / stat-row pattern */
+.objectives-list {
+    flex-grow: 1;
+    max-height: 220px;
+    margin-bottom: 12px;
+    background-color: rgba(255, 255, 255, 0.03);
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.08);
+    border-right-color: rgba(255, 255, 255, 0.08);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+    border-left-color: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.objectives-list .unity-scroll-view__content-container {
+    padding-right: 2px;
+}
+
+.objective-row {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-bottom: 6px;
+}
+
+.objective-row__bullet {
+    width: 16px;
+    flex-shrink: 0;
+    color: rgba(212, 175, 55, 0.9);
+    font-size: 12px;
+    margin-right: 8px;
+}
+
+.objective-row__text {
+    flex-grow: 1;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 12px;
+    white-space: normal;
+}
+
+.objective-row__text--done {
+    color: #D4AF37;
+}
+
+.quest-journal-panel .spacer {
+    flex-grow: 1;
+    min-height: 8px;
+}
+
+.quest-reward {
+    color: #D4AF37;
+    font-size: 12px;
+    padding-top: 8px;
+    border-top-width: 1px;
+    border-top-color: rgba(212, 175, 55, 0.2);
+}
+
+/* Close — inventory close-btn */
+.quest-journal-panel .close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.7);
+    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    border-width: 0;
+    padding: 0;
+}
+
+.quest-journal-panel .close-btn:hover {
+    background-color: rgba(212, 175, 55, 0.2);
+    color: #D4AF37;
+    border-width: 0;
+}
+
+.quest-journal-panel .close-btn:active {
+    background-color: rgba(212, 175, 55, 0.1);
+    border-width: 1px;
+    border-color: rgba(212, 175, 55, 0.6);
+}
+
+.empty-hint {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 12px;
+    margin-top: 8px;
+    white-space: normal;
+}

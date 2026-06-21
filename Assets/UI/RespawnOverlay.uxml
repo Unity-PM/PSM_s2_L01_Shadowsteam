@@ -1,0 +1,17 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+
+    <Style src="RespawnOverlay.uss" />
+
+    <ui:VisualElement name="respawn-overlay"
+                      class="respawn-overlay">
+
+        <ui:Label text="YOU DIED"
+                  class="death-title" />
+
+        <ui:Label text="Respawning in 5..."
+                  name="respawn-timer"
+                  class="respawn-timer" />
+
+    </ui:VisualElement>
+
+</ui:UXML>

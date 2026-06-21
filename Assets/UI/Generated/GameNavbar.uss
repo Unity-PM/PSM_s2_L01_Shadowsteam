@@ -1,0 +1,56 @@
+.game-navbar {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 208px;
+    height: 72px;
+    flex-direction: row;
+    align-items: center;
+    padding: 8px;
+    background-color: rgba(10, 12, 25, 0.85);
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: rgba(212, 175, 55, 0.25);
+}
+
+.nav-btn {
+    width: 56px;
+    height: 56px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    border-width: 0;
+    margin-right: 6px;
+    padding: 0;
+}
+
+.nav-btn:hover {
+    background-color: rgba(212, 175, 55, 0.15);
+    border-width: 0;
+}
+
+.nav-btn:active {
+    background-color: rgba(212, 175, 55, 0.1);
+    border-width: 1px;
+    border-color: rgba(212, 175, 55, 0.6);
+}
+
+.nav-icon {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.9);
+    -unity-text-align: middle-center;
+    picking-mode: ignore;
+}
+
+.nav-btn:hover .nav-icon {
+    color: #D4AF37;
+}
+
+.nav-label {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.6);
+    -unity-text-align: middle-center;
+    picking-mode: ignore;
+}

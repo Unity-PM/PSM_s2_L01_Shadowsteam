@@ -1,0 +1,25 @@
+Sprawozdanie – Shadowsteam
+Zajęcia: 2026-05-11
+Autor: Mykyta Luchaninov
+
+Co zrobiłem/am
+
+Zbudowałem generator UI oparty na AI — okno edytora Unity (AIUIGenerator) wywołujące API Groq (model llama-3.3-70b-versatile) które na podstawie opisu tekstowego generuje kompletne pliki .uxml, .uss oraz .cs gotowe do użycia w projekcie. Generator zapisuje pliki bezpośrednio do projektu i wywołuje AssetDatabase.Refresh() automatycznie przeładowując zasoby.
+Zaprojektowałem system promptów dla generatora zawierający precyzyjne reguły Unity USS (zakaz display:flex, gap, calc(), border shorthand, nth-child) oraz przykłady poprawnego UXML. Dzięki temu model generuje kod zgodny z ograniczeniami silnika bez ręcznych poprawek.
+Zaimplementowałem UIManager jako singleton zarządzający widocznością wszystkich paneli. System obsługuje logikę toggle — kliknięcie przycisku otwiera panel jeśli był zamknięty lub zamyka go jeśli był otwarty, automatycznie zamykając poprzednio otwarty panel.
+Stworzyłem GameNavbar — horyzontalny pasek nawigacji w stylu Genshin Impact umieszczony w prawym górnym rogu ekranu z trzema przyciskami (Inventory, Character, Quests). Każdy przycisk zawiera ikonę emoji i etykietę tekstową, posiada stany hover i active stylizowane przez USS.
+Dodałem do systemu trzy nowe widgety rejestrowane przez ComponentRegistry: GoldLabel, Spacer oraz HeaderLabel — każdy implementuje IConfigurable i jest dostępny w schemacie PanelDefinitionSO.
+
+
+Problemy / blokery
+
+Przyciski navbaru miały wymiary NaN przez co obszar klikalny nie istniał. Problem wynikał z braku jawnych wymiarów na kontenerze .game-navbar — Unity nie potrafił wyliczyć rozmiarów dzieci. Rozwiązano przez dodanie width: 208px; height: 72px do kontenera.
+Generator Groq ignorował szczegóły promptu generując prosty pionowy layout zamiast poziomego navbaru. Rozwiązano przez ręczne napisanie plików UXML i USS zgodnych z wymaganiami zamiast polegania na generatorze dla prostych komponentów.
+API Gemini (gemini-1.5-flash) zwracało błąd 404 — model został wycofany. Zmieniono na gemini-2.0-flash, a następnie napotkano limit darmowego tierу (429 Too Many Requests). Ostatecznie zmieniono API na Groq który oferuje 14 400 requestów dziennie na darmowym planie.
+
+
+Plan na kolejne zajęcia
+
+Implementacja panelu Inventory z siatką przedmiotów (6 kolumn), podglądem szczegółów po kliknięciu, podglądem modyfikatorów statystyk oraz przyciskiem zakładania ekwipunku połączonym z EquipmentComponent.
+Implementacja Quest Journal z listą aktywnych questów filtrowaną po kategorii (Main/Side), szczegółami wybranego questa i listą celów z postępem.
+Naprawa systemu EquipmentComponent — auto-equip przy podniesieniu przedmiotu powodował wielokrotne aplikowanie modyfikatorów statystyk przez błąd w EventBus.Unsubscribe.

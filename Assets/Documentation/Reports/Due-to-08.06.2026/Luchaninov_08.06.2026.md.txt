@@ -1,0 +1,26 @@
+Sprawozdanie – Shadowsteam
+Zajęcia: 2026-05-25
+Autor: Mykyta Luchaninov
+
+Co zrobiłem/am
+
+Zaimplementowałem panel Inventory — pełny ekran z dwukolumnowym layoutem. Lewa kolumna zawiera scrollowalną siatkę slotów przedmiotów (6 kolumn, sloty 80×80px) z ikonami pobieranymi ze Sprite w ItemSO przez style.backgroundImage. Prawa kolumna pokazuje nazwę, typ i opis wybranego przedmiotu oraz podgląd modyfikatorów statystyk z EquipmentSO.statModifiers — wartości dodatnie wyświetlane na zielono, ujemne na czerwono.
+Podłączyłem InventoryPanel do InventoryComponent przez InventoryUpdatedEvent — siatka automatycznie przebudowuje się gdy gracz podniesie przedmiot. Przycisk „Equip Item" (widoczny tylko dla przedmiotów typu Equipment) wywołuje EquipmentComponent.Equip() i odświeża podgląd statystyk.
+Zbudowałem Quest Journal — panel dwukolumnowy z listą aktywnych questów po lewej filtrowaną przyciskami tab (Main/Side) oraz szczegółami wybranego questa po prawej. Lista celów pokazuje wskaźnik ukończenia (✓/○), opis celu generowany dynamicznie na podstawie typu (KillObjective, CollectObjective, TalkObjective, ReachLocationObjective) oraz frakcję postępu. Panel subskrybuje dane bezpośrednio z QuestManager.ActiveQuests.
+Naprawiłem InventoryComponent — dodano przechowywanie listy przedmiotów List<ItemSO> z publicznym IReadOnlyList<ItemSO> Items. Poprzednia wersja tylko logowała podniesienie przedmiotu bez jego zapisywania.
+Naprawiłem EquipmentComponent — usunięto auto-equip przy InventoryItemAddedEvent który powodował wielokrotne aplikowanie modyfikatorów. Ekwipowanie odbywa się teraz wyłącznie przez jawne wywołanie EquipmentComponent.Equip() z poziomu UI.
+Rozszerzono UIFactory o obsługę zagnieżdżonych kontenerów — pole children w WidgetConfig umożliwia budowanie złożonych layoutów wielokolumnowych bez pisania kodu layoutu. Typ container jest wbudowany i nie wymaga rejestracji w ComponentRegistry.
+
+
+Problemy / blokery
+
+QuestJournal wymagał dodania pola source do StatUpdatedEvent aby panel wiedział którego StatComponent dotyczy aktualizacja. Bez tego wszystkie panele odświeżały się przy każdej zmianie statystyk dowolnego obiektu w scenie.
+Wszystkie panele UI renderowały się jednocześnie nakładając na siebie (overlapping). Problem wynikał z braku systemu zarządzania widocznością — rozwiązano przez UIManager który wymusza ukrycie wszystkich paneli toggle przy starcie i zarządza logiką otwierania/zamykania.
+USS klasy dodawane dynamicznie przez C# (quest-entry--selected, tab-button--active) nie były zdefiniowane w pliku .uss generowanym przez AI który używał konwencji BEM bez myślników (quest-entry.selected). Ujednolicono konwencję nazewnictwa na BEM z podwójnym myślnikiem we wszystkich plikach.
+
+
+Plan na kolejne zajęcia
+
+Implementacja Character Screen — ekran postaci pokazujący wszystkie statystyki z StatComponent (HP, MP, Stamina, ATK, MAG, DEF i pozostałe typy z StatType) oraz sloty założonego ekwipunku z EquipmentComponent z możliwością zdjęcia przedmiotu.
+Implementacja systemu tooltip — globalny pływający tooltip aktywowany przez hover na dowolnym elemencie UI pokazujący nazwę i opis przedmiotu lub umiejętności.
+Integracja XP bara z systemem questów — pasek doświadczenia aktualizuje się gdy QuestManager przyznaje XP przez experienceGrantedChannel po ukończeniu questa.

@@ -321,6 +321,8 @@ public class EnemyHealthBar : MonoBehaviour
     {
         if (worldCanvas == null)
             worldCanvas = GetComponentInChildren<Canvas>(true);
+        if (worldCanvas == null)
+            worldCanvas = GetComponentInParent<Canvas>(true);
 
         if (worldCanvas == null)
         {

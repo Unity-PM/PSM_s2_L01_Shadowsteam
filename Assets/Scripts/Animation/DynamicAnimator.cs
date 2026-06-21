@@ -156,6 +156,7 @@ public class DynamicAnimator : MonoBehaviour
 
     private void Update()
     {
+        ApplyLoopingStateWrap();
         HandleFade();
         HandleAutoTransition();
     }
@@ -383,12 +384,35 @@ public class DynamicAnimator : MonoBehaviour
         CompleteFadeImmediately();
     }
 
+    private void ApplyLoopingStateWrap()
+    {
+        WrapPlayableIfNeeded(currentState, currentPlayable);
+        if (isFading)
+            WrapPlayableIfNeeded(pendingState, nextPlayable);
+    }
+
+    private void WrapPlayableIfNeeded(AnimationState state, AnimationClipPlayable playable)
+    {
+        if (state == null || !state.loop || state.clip == null || !playable.IsValid())
+            return;
+
+        double duration = GetStateDuration(state);
+        if (duration <= double.Epsilon)
+            return;
+
+        double time = playable.GetTime();
+        if (time < duration)
+            return;
+
+        playable.SetTime(time % duration);
+    }
+
     private void HandleAutoTransition()
     {
         if (isFading || currentState == null || currentState.loop || !currentPlayable.IsValid())
             return;
 
-        if (currentPlayable.GetTime() < currentState.clip.length)
+        if (currentPlayable.GetTime() < GetStateDuration(currentState))
             return;
 
         if (!string.IsNullOrWhiteSpace(currentState.nextStateAfterFinish))
@@ -408,7 +432,15 @@ public class DynamicAnimator : MonoBehaviour
         if (!ReferenceEquals(currentState, requestedState) && currentState.id != requestedState.id)
             return false;
 
-        return !currentState.loop && currentPlayable.GetTime() >= currentState.clip.length;
+        return !currentState.loop && currentPlayable.GetTime() >= GetStateDuration(currentState);
+    }
+
+    double GetStateDuration(AnimationState state)
+    {
+        if (state?.clip == null)
+            return 0d;
+
+        return state.clip.length / Mathf.Max(0.01f, state.speed);
     }
 
     private bool TryGetState(string stateId, out AnimationState state)

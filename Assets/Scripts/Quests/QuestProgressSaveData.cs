@@ -2,8 +2,8 @@ using System;
 
 namespace Platformer {
     /// <summary>
-    /// DTO для <see cref="UnityEngine.JsonUtility"/>. Unity сериализует только публичные поля —
-    /// здесь они оставлены намеренно; имена полей совпадают с ключами в JSON.
+    /// DTO for <see cref="UnityEngine.JsonUtility"/>. Unity serializes only public fields —
+    /// they are public on purpose; field names match the JSON keys.
     /// </summary>
     [Serializable]
     public class ActiveQuestSaveEntry {

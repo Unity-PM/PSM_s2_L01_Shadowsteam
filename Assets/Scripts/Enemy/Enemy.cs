@@ -15,7 +15,7 @@ namespace Platformer {
         [SerializeField] float damageToPlayer = 10f;
         [SerializeField] [Range(0f, 1f)] float attackDamageNormalizedTime = 0.5f;
 
-        [Header("Clip ids (как в DynamicAnimator на этом враге)")]
+        [Header("Clip ids (as in DynamicAnimator on this enemy)")]
         [SerializeField] string animIdleId = "Idle";
         [SerializeField] string animWalkId = "WalkFWD";
         [SerializeField] string animRunId = "Run";
@@ -32,7 +32,7 @@ namespace Platformer {
         [SerializeField] float maxAgentSpeedMultiplier = 2.5f;
         [SerializeField] float navMeshRecoveryRadius = 4f;
 
-        [Header("Поворот к цели в атаке")]
+        [Header("Turn toward target during attack")]
         [SerializeField] float attackTurnSpeedDegrees = 720f;
         [SerializeField] float attackCommitRangeBonus = 0.15f;
 
@@ -134,9 +134,15 @@ namespace Platformer {
                 return;
 
             rootRigidbody.useGravity = false;
+
+            // Zero out motion while the body is still dynamic. A kinematic body
+            // rejects velocity assignments and logs a warning, so do this first.
+            if (!rootRigidbody.isKinematic) {
+                rootRigidbody.linearVelocity = Vector3.zero;
+                rootRigidbody.angularVelocity = Vector3.zero;
+            }
+
             rootRigidbody.isKinematic = true;
-            rootRigidbody.linearVelocity = Vector3.zero;
-            rootRigidbody.angularVelocity = Vector3.zero;
             rootRigidbody.constraints |= RigidbodyConstraints.FreezeRotation;
         }
 
@@ -151,6 +157,8 @@ namespace Platformer {
         public void TryStartAttack() {
             if (attackTimer.IsRunning || pendingAttackDamage)
                 return;
+            if (IsAttackAnimationStillPlaying())
+                return;
 
             if (!playerDetector.CanAttackPlayer())
                 return;
@@ -160,6 +168,15 @@ namespace Platformer {
             attackStartedAt = Time.time;
             PlayAttackAnimation();
             audioController?.PlayAttackSwing();
+        }
+
+        bool IsAttackAnimationStillPlaying() {
+            if (clipAnimator == null || string.IsNullOrEmpty(animAttackId))
+                return false;
+            if (!string.Equals(clipAnimator.CurrentStateId, animAttackId, System.StringComparison.Ordinal))
+                return false;
+
+            return clipAnimator.IsMovementLocked;
         }
 
         public void UpdateAttack() {

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -9,7 +10,23 @@ public class GameSaveCoordinator : MonoBehaviour
     [SerializeField] ItemSO[] itemCatalog;
     [SerializeField] bool autoSaveOnQuit = true;
 
+    readonly Dictionary<string, ItemSO> itemById = new Dictionary<string, ItemSO>();
     readonly Dictionary<string, EquipmentSO> equipmentById = new Dictionary<string, EquipmentSO>();
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void Bootstrap()
+    {
+        EnsureInstance();
+    }
+
+    public static GameSaveCoordinator EnsureInstance()
+    {
+        if (Instance != null)
+            return Instance;
+
+        var go = new GameObject(nameof(GameSaveCoordinator));
+        return go.AddComponent<GameSaveCoordinator>();
+    }
 
     void Awake()
     {
@@ -21,7 +38,7 @@ public class GameSaveCoordinator : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        RebuildEquipmentLookup();
+        RebuildItemLookup();
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
@@ -47,33 +64,56 @@ public class GameSaveCoordinator : MonoBehaviour
 
     public void RebuildEquipmentLookup()
     {
+        RebuildItemLookup();
+    }
+
+    public void RebuildItemLookup()
+    {
+        itemById.Clear();
         equipmentById.Clear();
 
         if (itemCatalog != null)
         {
             foreach (var item in itemCatalog)
-                TryRegisterEquipment(item);
+                TryRegisterItem(item);
         }
 
         var fromResources = Resources.LoadAll<ItemSO>(string.Empty);
         foreach (var item in fromResources)
-            TryRegisterEquipment(item);
+            TryRegisterItem(item);
+
+        // Include inactive pickups: a picked-up pickup deactivates and self-destroys in
+        // its Awake, but it is still alive for this frame and is the only source of its
+        // runtime icon. Excluding it would lose the icon on every load.
+        ItemPickup[] pickups = FindObjectsByType<ItemPickup>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < pickups.Length; i++)
+            TryRegisterItem(pickups[i] != null ? pickups[i].CurrentItemData : null);
+
+        InventoryComponent[] inventories =
+            FindObjectsByType<InventoryComponent>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < inventories.Length; i++)
+            inventories[i]?.RegisterItemsInLookup(itemById);
+
+        // Runtime items the player already collected this session carry their icons only
+        // in memory, so re-register them last to take precedence over degraded fallbacks.
+        foreach (ItemSO item in GameSession.SessionItems)
+            TryRegisterItem(item);
     }
 
-    void TryRegisterEquipment(ItemSO item)
+    void TryRegisterItem(ItemSO item)
     {
-        if (item is not EquipmentSO equipment)
+        if (item == null || string.IsNullOrEmpty(item.itemId))
             return;
 
-        if (string.IsNullOrEmpty(equipment.itemId))
-            return;
+        itemById[item.itemId] = item;
 
-        equipmentById[equipment.itemId] = equipment;
+        if (item is EquipmentSO equipment)
+            equipmentById[equipment.itemId] = equipment;
     }
 
     public static GameObject FindPlayerObject()
     {
-        var playerDeath = Object.FindFirstObjectByType<PlayerDeathHandler>();
+        var playerDeath = UnityEngine.Object.FindFirstObjectByType<PlayerDeathHandler>();
         if (playerDeath != null)
             return playerDeath.gameObject;
 
@@ -87,6 +127,7 @@ public class GameSaveCoordinator : MonoBehaviour
             return null;
 
         var stats = player.GetComponent<StatComponent>();
+        var inventory = player.GetComponent<InventoryComponent>();
         var equipment = player.GetComponent<EquipmentComponent>();
         var t = player.transform;
 
@@ -98,11 +139,23 @@ public class GameSaveCoordinator : MonoBehaviour
         };
 
         if (stats != null)
-            data.playerStats = stats.ExportStatsForSave();
+            data.playerStats = ExportPlayerStatsForSave(stats);
+
+        if (inventory != null)
+            data.inventoryItems = inventory.ExportInventoryForSave();
 
         if (equipment != null)
             data.equippedItems = equipment.ExportEquippedForSave();
 
+        data.pickedWorldItemIds = GameSession.ExportPickedWorldItemIds();
+
+        return data;
+    }
+
+    static PlayerStatsData ExportPlayerStatsForSave(StatComponent stats)
+    {
+        PlayerStatsData data = stats.ExportStatsForSave();
+        data.statModifiers = Array.Empty<StatModifierEntry>();
         return data;
     }
 
@@ -122,6 +175,12 @@ public class GameSaveCoordinator : MonoBehaviour
         TrySaveActivePlayer();
     }
 
+    public void RegisterPickedWorldItem(string pickupId)
+    {
+        GameSession.MarkWorldItemPicked(pickupId);
+        TrySaveActivePlayer();
+    }
+
     public void LoadGame()
     {
         var data = GameSaveService.Load();
@@ -132,21 +191,32 @@ public class GameSaveCoordinator : MonoBehaviour
         }
 
         GameSession.PendingApply = data;
+        GameSession.LoadPickedWorldItems(data.pickedWorldItemIds);
         SceneManager.LoadScene(data.sceneBuildIndex);
     }
 
     public void DeleteSave()
     {
         GameSaveService.DeleteSave();
+        Platformer.QuestProgressCommands.DeleteSave();
+        GameSession.ClearRuntimeState();
+        ResetLiveQuestManagers();
     }
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        RebuildItemLookup();
+
         if (GameSession.PendingApply == null)
+        {
+            ApplyPickedWorldItemState(GameSession.ExportPickedWorldItemIds());
             return;
+        }
 
         var data = GameSession.PendingApply;
         GameSession.PendingApply = null;
+        GameSession.LoadPickedWorldItems(data.pickedWorldItemIds);
+        ApplyPickedWorldItemState(data.pickedWorldItemIds);
 
         var player = FindPlayerObject();
         if (player == null)
@@ -164,14 +234,76 @@ public class GameSaveCoordinator : MonoBehaviour
             return;
 
         var stats = player.GetComponent<StatComponent>();
+        var inventory = player.GetComponent<InventoryComponent>();
         var equipment = player.GetComponent<EquipmentComponent>();
+        PlayerStatsData savedStats = CreateStatsWithoutSavedModifiers(data.playerStats);
 
         if (stats != null)
-            stats.ApplySaveData(data.playerStats);
+            stats.ApplySaveData(savedStats);
+
+        if (inventory != null)
+        {
+            inventory.HydrateInventoryFromSave(data.inventoryItems, itemById);
+            inventory.RegisterItemsInLookup(itemById);
+            RebuildEquipmentLookupFromItems();
+        }
 
         if (equipment != null)
             equipment.HydrateEquippedFromSave(data.equippedItems, equipmentById);
 
+        if (stats != null)
+            stats.ApplySavedResourceValues(savedStats);
+
         player.transform.SetPositionAndRotation(data.position, data.rotation);
+    }
+
+    void ApplyPickedWorldItemState(string[] pickedIds)
+    {
+        if (pickedIds == null || pickedIds.Length == 0)
+            return;
+
+        var picked = new HashSet<string>(pickedIds);
+        ItemPickup[] pickups = FindObjectsByType<ItemPickup>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int i = 0; i < pickups.Length; i++)
+        {
+            ItemPickup pickup = pickups[i];
+            if (pickup == null || !picked.Contains(pickup.PersistentPickupId))
+                continue;
+
+            Destroy(pickup.gameObject);
+        }
+    }
+
+    void RebuildEquipmentLookupFromItems()
+    {
+        equipmentById.Clear();
+        foreach (ItemSO item in itemById.Values)
+        {
+            if (item is EquipmentSO equipment && !string.IsNullOrEmpty(equipment.itemId))
+                equipmentById[equipment.itemId] = equipment;
+        }
+    }
+
+    static void ResetLiveQuestManagers()
+    {
+        Platformer.QuestManager[] managers =
+            FindObjectsByType<Platformer.QuestManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < managers.Length; i++)
+            managers[i]?.ResetProgressForNewGame();
+    }
+
+    static PlayerStatsData CreateStatsWithoutSavedModifiers(PlayerStatsData source)
+    {
+        if (source == null)
+            return new PlayerStatsData { statModifiers = Array.Empty<StatModifierEntry>() };
+
+        return new PlayerStatsData
+        {
+            hp = source.hp,
+            mp = source.mp,
+            stamina = source.stamina,
+            statModifiers = Array.Empty<StatModifierEntry>()
+        };
     }
 }

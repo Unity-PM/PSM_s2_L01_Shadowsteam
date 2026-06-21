@@ -25,9 +25,9 @@ public class StatComponent : MonoBehaviour
     public float getStamina() => currentStamina;
     public bool IsStaminaExhausted => isStaminaExhausted;
 
-    public float getMaxHP() => baseStatsTemplate != null ? baseStatsTemplate.MaxHP + getModifier(StatType.HP) : 0f;
-    public float getMaxMP() => baseStatsTemplate != null ? baseStatsTemplate.MaxMP + getModifier(StatType.MP) : 0f;
-    public float getMaxStamina() => baseStatsTemplate != null ? baseStatsTemplate.MaxStamina + getModifier(StatType.Stamina) : 0f;
+    public float getMaxHP() => Mathf.Max(0f, GetEffectiveStat(StatType.HP));
+    public float getMaxMP() => Mathf.Max(0f, GetEffectiveStat(StatType.MP));
+    public float getMaxStamina() => Mathf.Max(0f, GetEffectiveStat(StatType.Stamina));
 
     private void EnsureModifiersInitialized()
     {
@@ -187,6 +187,20 @@ public class StatComponent : MonoBehaviour
 
     public float GetEffectiveStat(StatType type) => GetBaseStat(type) + GetStatModifier(type);
 
+    public float GetPercentStatMultiplier(StatType type, float fallbackPercent = 100f)
+    {
+        float baseValue = GetBaseStat(type);
+        float modifier = GetStatModifier(type);
+        float effectivePercent = baseValue + modifier;
+
+        if (Mathf.Approximately(baseValue, 0f)
+            && Mathf.Approximately(modifier, 0f)
+            && fallbackPercent > 0f)
+            effectivePercent = fallbackPercent;
+
+        return Mathf.Max(0f, effectivePercent / 100f);
+    }
+
     private float getModifier(StatType type) => GetStatModifier(type);
 
     public PlayerStatsData ExportStatsForSave()
@@ -233,6 +247,16 @@ public class StatComponent : MonoBehaviour
         EventBus.Publish(new StatUpdatedEvent(this));
     }
 
+    public void ApplySavedResourceValues(PlayerStatsData data)
+    {
+        currentHP = Mathf.Clamp(data?.hp ?? getMaxHP(), 0, getMaxHP());
+        currentMP = Mathf.Clamp(data?.mp ?? getMaxMP(), 0, getMaxMP());
+        currentStamina = Mathf.Clamp(data?.stamina ?? getMaxStamina(), 0, getMaxStamina());
+        isStaminaExhausted = currentStamina <= 0f;
+
+        EventBus.Publish(new StatUpdatedEvent(this));
+    }
+
 
     private void RegenerateStats()
     {
@@ -244,13 +268,13 @@ public class StatComponent : MonoBehaviour
         float previousStamina = currentStamina;
 
         if (!isDead && !HPRegenPaused)
-            currentHP = Mathf.Min(currentHP + baseStatsTemplate.HPRegen * Time.deltaTime, getMaxHP());
+            currentHP = RegenerateResource(currentHP, GetEffectiveStat(StatType.HPRegen), getMaxHP());
 
-        currentMP = Mathf.Min(currentMP + baseStatsTemplate.MPRegen * Time.deltaTime, getMaxMP());
+        currentMP = RegenerateResource(currentMP, GetEffectiveStat(StatType.MPRegen), getMaxMP());
 
         if (!StaminaRegenPaused)
         {
-            currentStamina = Mathf.Min(currentStamina + baseStatsTemplate.StaminaRegen * Time.deltaTime, getMaxStamina());
+            currentStamina = RegenerateResource(currentStamina, GetEffectiveStat(StatType.StaminaRegen), getMaxStamina());
 
             if (isStaminaExhausted && currentStamina >= getMaxStamina() / 6f) isStaminaExhausted = false;
         }
@@ -261,6 +285,12 @@ public class StatComponent : MonoBehaviour
             return;
 
         EventBus.Publish(new StatUpdatedEvent(this));
+    }
+
+    private static float RegenerateResource(float current, float regenPerSecond, float max)
+    {
+        float regen = Mathf.Max(0f, regenPerSecond);
+        return Mathf.Clamp(current + regen * Time.deltaTime, 0f, max);
     }
 
 }

@@ -4,7 +4,7 @@ using Unity.VisualScripting;
 public class MovementStaminaController : MonoBehaviour
 {
     [Header("References")]
-    //private StarterAssetsInputs input; инпут метод
+    //private StarterAssetsInputs input; input method
     private StatComponent stats;
 
     //[Header("Stamina Settings")]
@@ -12,7 +12,7 @@ public class MovementStaminaController : MonoBehaviour
     //private float minStaminaToAction = 2;
     private void Awake()
     {
-        //input = gameObject.GetComponent<StarterAssetsInputs>(); компонент инпута
+        //input = gameObject.GetComponent<StarterAssetsInputs>(); input component
         stats = gameObject.GetComponent<StatComponent>();
     }
     private void Update()
@@ -30,6 +30,6 @@ public class MovementStaminaController : MonoBehaviour
             StatType.Stamina,
             -staminaDrainPerSecond * Time.deltaTime
         ));*//*
-        //если спринт включен, то отнимаем стамину, если стамины меньше чем нужно для действия, то выключаем спринт а если игрок не спринтит тогда просто ретерн*/
+        //if sprint is on, drain stamina; if stamina is below the action threshold, turn sprint off; if the player isn't sprinting, just return*/
     }
 }

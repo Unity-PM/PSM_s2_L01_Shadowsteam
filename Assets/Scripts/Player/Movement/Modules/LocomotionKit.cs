@@ -36,7 +36,15 @@ namespace Player.Movement.Modules2
                 return Vector3.zero;
 
             Vector3 direction = WorldDirection(brain, brain.Input.MoveVector);
-            return direction * speed;
+            return direction * GetEffectiveMoveSpeed(brain, speed);
+        }
+
+        internal static float GetEffectiveMoveSpeed(MovementBrain brain, float baseSpeed)
+        {
+            StatComponent stats = Stats(brain);
+            return stats != null
+                ? baseSpeed * stats.GetPercentStatMultiplier(StatType.MS)
+                : baseSpeed;
         }
 
         internal static void SpendStaminaFlat(StatComponent stats, float amount)

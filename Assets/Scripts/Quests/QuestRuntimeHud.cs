@@ -228,7 +228,9 @@ namespace Platformer {
                 case ReachLocationObjective reach:
                     return $"Reach {reach.LocationId}: {current}/{cap}";
                 case TalkObjective talk:
-                    return $"Talk to {talk.NpcId}: {current}/{cap}";
+                    return $"Talk to {talk.DisplayName}: {current}/{cap}";
+                case CastAbilityObjective cast:
+                    return $"Cast {cast.DisplayName}: {current}/{cap}";
                 default:
                     return $"Objective: {current}/{cap}";
             }

@@ -75,8 +75,21 @@ public class SkillManager : MonoBehaviour
 
         ExecuteAbilityLogic(skill);
 
-        cooldownTimers[skillId] = skill.cooldown;
+        cooldownTimers[skillId] = GetEffectiveCooldown(skill);
         EventBus.Publish(new StatChangeEvent(casterStats, StatType.MP, -skill.manaCost));
+        EventBus.Publish(new AbilityCastEvent(skillId, casterStats));
+    }
+
+    private float GetEffectiveCooldown(AbilitySO skill)
+    {
+        if (skill == null)
+            return 0f;
+
+        float cooldownReduction = casterStats != null
+            ? Mathf.Clamp(casterStats.GetEffectiveStat(StatType.CooldownReduction), 0f, 100f)
+            : 0f;
+
+        return Mathf.Max(0f, skill.cooldown * (1f - cooldownReduction / 100f));
     }
 
     private void ExecuteAbilityLogic(AbilitySO skill)

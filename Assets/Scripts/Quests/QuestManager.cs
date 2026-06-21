@@ -31,6 +31,19 @@ namespace Platformer {
             ResolveCompletedQuests();
         }
 
+        void OnEnable() {
+            EventBus.Subscribe<AbilityCastEvent>(OnAbilityCast);
+        }
+
+        void OnDisable() {
+            EventBus.Unsubscribe<AbilityCastEvent>(OnAbilityCast);
+        }
+
+        void OnAbilityCast(AbilityCastEvent e) {
+            if (e != null)
+                NotifyAbilityCast(e.AbilityId);
+        }
+
         internal void NotifyReachLocationEntered(string locationId) {
             if (string.IsNullOrEmpty(locationId) || activeQuests.Count == 0)
                 return;
@@ -167,6 +180,16 @@ namespace Platformer {
             ApplyProgress(TryBreakSlot);
         }
 
+        internal void NotifyAbilityCast(string abilityId) {
+            if (string.IsNullOrEmpty(abilityId) || activeQuests.Count == 0)
+                return;
+
+            bool TryCastSlot(QuestObjective o, ref int slot) =>
+                o.TryProgressAbilityCast(abilityId, ref slot);
+
+            ApplyProgress(TryCastSlot);
+        }
+
         internal void NotifyNpcTalked(string npcId) {
             if (string.IsNullOrEmpty(npcId) || activeQuests.Count == 0)
                 return;
@@ -261,10 +284,12 @@ namespace Platformer {
                         if (entry == null || string.IsNullOrEmpty(entry.id))
                             continue;
 
-                        if (!questById.TryGetValue(entry.id, out QuestDefinition definition)) {
-                            Debug.LogWarning($"QuestManager: skipped unknown quest id '{entry.id}' when loading.");
+                        // Some quest givers register their definition after the manager
+                        // loads (e.g. InitialQuestGiverFinder). loadedProgressData is kept,
+                        // so RestoreLoadedActiveQuest re-applies this entry once the
+                        // definition is registered — skip silently instead of warning.
+                        if (!questById.TryGetValue(entry.id, out QuestDefinition definition))
                             continue;
-                        }
 
                         int[] normalized = ClampProgressToDefinition(definition, entry.progress);
                         activeQuests.Add(new QuestRuntimeState(definition, normalized));
@@ -281,6 +306,13 @@ namespace Platformer {
             }
 
             ResolveCompletedQuests();
+        }
+
+        public void ResetProgressForNewGame() {
+            loadedProgressData = null;
+            activeQuests.Clear();
+            completedQuestIds.Clear();
+            QuestJournalChanged?.Invoke();
         }
 
         internal bool IsQuestActive(string questId) {

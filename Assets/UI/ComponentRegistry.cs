@@ -12,15 +12,34 @@ public static class ComponentRegistry
     {
         _map = new();
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            foreach (var type in assembly.GetTypes())
+        {
+            Type[] types;
+            try
+            {
+                types = assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException e)
+            {
+                // Some assemblies fail to load every type; keep the ones that did.
+                types = Array.FindAll(e.Types, t => t != null);
+            }
+
+            foreach (var type in types)
             {
                 var attr = type.GetCustomAttribute<UIWidgetAttribute>();
-                if (attr != null)
+                if (attr == null)
+                    continue;
+
+                // Only concrete VisualElements can be instantiated as widgets.
+                if (type.IsAbstract || !typeof(VisualElement).IsAssignableFrom(type))
                 {
-                    _map[attr.TypeId] = type;
-                    Debug.Log($"[Registry] registered: {attr.TypeId} → {type.Name}");
+                    Debug.LogWarning($"[Registry] '{type.Name}' is marked [UIWidget] but is not a concrete VisualElement; skipped.");
+                    continue;
                 }
+
+                _map[attr.WidgetTypeId] = type;
             }
+        }
     }
 
     public static VisualElement Create(string typeId)
@@ -31,6 +50,7 @@ public static class ComponentRegistry
             Debug.LogWarning($"[Registry] unknown typeId: '{typeId}'");
             return new VisualElement();
         }
-        return (VisualElement)Activator.CreateInstance(type);
+
+        return Activator.CreateInstance(type) as VisualElement ?? new VisualElement();
     }
 }

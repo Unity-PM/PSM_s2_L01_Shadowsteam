@@ -19,6 +19,8 @@ public class CharacterPanel : MonoBehaviour
 	{
 		StatType.CritChance,
 		StatType.CritDamage,
+		StatType.MS,
+		StatType.AS,
 		StatType.DodgeChance,
 		StatType.BlockChance,
 		StatType.CooldownReduction

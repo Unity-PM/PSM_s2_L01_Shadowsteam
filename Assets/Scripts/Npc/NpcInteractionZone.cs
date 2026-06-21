@@ -3,7 +3,7 @@ using UnityEngine.Events;
 
 namespace Platformer {
     /// <summary>
-    /// Триггер «игрок рядом» — вызывайте <see cref="OnPlayerInRangeChanged"/> для показа «Press E» на своём UI (см. префаб Mishania).
+    /// "Player nearby" trigger — invoke <see cref="OnPlayerInRangeChanged"/> to show a "Press E" prompt on your own UI (see the Mishania prefab).
     /// </summary>
     [RequireComponent(typeof(Collider))]
     public class NpcInteractionZone : MonoBehaviour {

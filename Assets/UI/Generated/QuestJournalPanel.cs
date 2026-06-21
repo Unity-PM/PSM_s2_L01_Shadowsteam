@@ -397,8 +397,8 @@ static class QuestJournalObjectiveText
 				return $"Break {breakObject.BreakableId}: {current}/{cap}";
 			case TalkObjective talk:
 				return current >= cap
-					? $"Talk to {talk.NpcId} (done)"
-					: $"Talk to {talk.NpcId}";
+					? $"Talk to {talk.DisplayName} (done)"
+					: $"Talk to {talk.DisplayName}";
 			case ReachLocationObjective reach:
 				return current >= cap
 					? $"Reach {reach.LocationId} (done)"

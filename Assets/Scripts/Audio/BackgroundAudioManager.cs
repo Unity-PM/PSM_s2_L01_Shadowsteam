@@ -131,6 +131,11 @@ public class BackgroundAudioManager : MonoBehaviour
             }
 
             instance = this;
+
+            // DontDestroyOnLoad only works on root objects; detach if nested.
+            if (transform.parent != null)
+                transform.SetParent(null);
+
             DontDestroyOnLoad(gameObject);
         }
 

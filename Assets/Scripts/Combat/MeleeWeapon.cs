@@ -201,7 +201,7 @@ public class MeleeWeapon : MonoBehaviour
         if (!CanAttack())
             return;
 
-        cooldownTimer = attackInterval;
+        cooldownTimer = GetEffectiveAttackInterval();
         damagedTargets.Clear();
         hitTimer = Mathf.Max(0.02f, hitActiveTime);
 
@@ -444,6 +444,16 @@ public class MeleeWeapon : MonoBehaviour
             ownerStats = GetComponentInParent<StatComponent>();
 
         return ownerStats;
+    }
+
+    private float GetEffectiveAttackInterval()
+    {
+        StatComponent stats = ResolveOwnerStats();
+        float attackSpeedMultiplier = stats != null
+            ? stats.GetPercentStatMultiplier(StatType.AS)
+            : 1f;
+
+        return attackInterval / Mathf.Max(0.01f, attackSpeedMultiplier);
     }
 
     private static bool RollCritical(StatComponent attackerStats, out float multiplier)

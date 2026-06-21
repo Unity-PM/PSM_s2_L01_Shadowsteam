@@ -20,11 +20,11 @@ public class PauseMenuController : MonoBehaviour
     [SerializeField] private bool toggleWithEscape = true;
 
     [Header("Text")]
-    [SerializeField] private string titleText = "Пауза";
-    [SerializeField] private string subtitleText = "Игра остановлена";
-    [SerializeField] private string resumeText = "Продолжить";
-    [SerializeField] private string mainMenuText = "В главное меню";
-    [SerializeField] private string quitText = "Выйти из игры";
+    [SerializeField] private string titleText = "Paused";
+    [SerializeField] private string subtitleText = "Game paused";
+    [SerializeField] private string resumeText = "Resume";
+    [SerializeField] private string mainMenuText = "Main Menu";
+    [SerializeField] private string quitText = "Quit Game";
 
     [Header("Scenes")]
     [SerializeField] private string mainMenuSceneName = "MainMenuScene";
@@ -73,6 +73,10 @@ public class PauseMenuController : MonoBehaviour
 
         if (dontDestroyOnLoad)
         {
+            // DontDestroyOnLoad only works on root objects; detach if nested.
+            if (transform.parent != null)
+                transform.SetParent(null);
+
             DontDestroyOnLoad(gameObject);
         }
 

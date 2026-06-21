@@ -30,7 +30,7 @@ namespace Scene_Teleportation_Kit.Scripts.player
         }
 
         private SpawnPoint FindFirstSpawnPoint() {
-            SpawnPoint[] spawnPoints = FindObjectsOfType<SpawnPoint>();
+            SpawnPoint[] spawnPoints = FindObjectsByType<SpawnPoint>(FindObjectsSortMode.None);
             if (spawnPoints.Length > 0) {
                 return spawnPoints[0];
             }

@@ -16,6 +16,10 @@
                        name="play-btn"
                        class="menu-button" />
 
+            <ui:Button text="New Game"
+                       name="new-game-btn"
+                       class="menu-button" />
+
             <ui:Button text="Settings"
                        name="settings-btn"
                        class="menu-button" />

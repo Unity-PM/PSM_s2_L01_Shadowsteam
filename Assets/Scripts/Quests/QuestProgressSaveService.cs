@@ -6,7 +6,7 @@ namespace Platformer {
     internal static class QuestProgressSaveService {
         const string FileName = "quest_progress.json";
 
-        static string SavePath => Path.Combine(Application.persistentDataPath, FileName);
+        static string SavePath => global::GameSavePathProvider.GetSavePath(FileName);
 
         internal static bool HasSave() => File.Exists(SavePath);
 

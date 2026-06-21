@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 876adbb903b878f42bc10fc9ae36b9a2
+guid: 51d97084124e11241aaa730bdbdf0407
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 0
@@ -8,8 +8,8 @@ NativeFormatImporter:
   assetBundleVariant: 
 AssetOrigin:
   serializedVersion: 1
-  productId: 128097
-  packageName: Battle Wizard Poly Art
+  productId: 127652
+  packageName: Battle Wizard PBR
   packageVersion: 1.2
-  assetPath: Assets/WizardPolyArt/Materials/Skybox_Mat.mat
-  uploadId: 422634
+  assetPath: Assets/Imports/WizardPolyArt/Materials/Skybox_Mat.mat
+  uploadId: 459288

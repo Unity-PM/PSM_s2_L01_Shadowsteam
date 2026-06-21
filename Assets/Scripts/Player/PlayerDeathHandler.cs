@@ -4,15 +4,15 @@ using UnityEngine.Events;
 using UnityEngine.Serialization;
 
 /// <summary>
-/// Реагирует на <see cref="DeathEvent"/>: смерть/пауза, проигрывание клипов, респавн и восстановление статов.
-/// Анимация через <see cref="DynamicAnimator"/> (файл <c>Assets/Scripts/Animation/DynamicAnimator.cs</c>), как у <see cref="Platformer.Enemy"/> и <c>NpcAnimationTestController</c>.
-/// Точка спавна — <see cref="spawnAnchor"/> (на момент респавна) или снимок в <see cref="Start"/> при <see cref="rememberStartPoseWhenNoAnchor"/>.
+/// Reacts to <see cref="DeathEvent"/>: death/pause, clip playback, respawn, and stat restoration.
+/// Animation via <see cref="DynamicAnimator"/> (file <c>Assets/Scripts/Animation/DynamicAnimator.cs</c>), like <see cref="Platformer.Enemy"/> and <c>NpcAnimationTestController</c>.
+/// Spawn point — <see cref="spawnAnchor"/> (at respawn time) or a snapshot in <see cref="Start"/> when <see cref="rememberStartPoseWhenNoAnchor"/>.
 /// </summary>
 public class PlayerDeathHandler : MonoBehaviour {
     [Header("Spawn")]
-    [Tooltip("Если задан — при респавне берём world position/rotation у этого Transform (чекпоинты, пустышка в сцене).")]
+    [Tooltip("If set — on respawn, take world position/rotation from this Transform (checkpoints, an empty in the scene).")]
     [SerializeField] Transform spawnAnchor;
-    [Tooltip("Если spawnAnchor не задан, при старте сцены запоминаем позицию/поворот игрока (типичный респавн «как при загрузке уровня»).")]
+    [Tooltip("If spawnAnchor is not set, snapshot the player's position/rotation at scene start (typical \"respawn as on level load\").")]
     [SerializeField] bool rememberStartPoseWhenNoAnchor = true;
 
     [Header("Death & respawn")]
@@ -21,7 +21,7 @@ public class PlayerDeathHandler : MonoBehaviour {
     [SerializeField] float fallToGroundTimeoutSeconds = 6f;
 
     [Header("Animation (DynamicAnimator)")]
-    [Tooltip("Необязательно: находится автоматически на этом объекте или в дочерних, как у Enemy.")]
+    [Tooltip("Optional: found automatically on this object or its children, like on Enemy.")]
     [FormerlySerializedAs("clipAnimator")]
     [SerializeField] DynamicAnimator dynamicAnimator;
     [SerializeField] bool playDeathAnimationOnDeath = true;
@@ -173,7 +173,7 @@ public class PlayerDeathHandler : MonoBehaviour {
     void TeleportToSpawn() {
         if (spawnAnchor == null && !rememberStartPoseWhenNoAnchor) {
             Debug.LogWarning(
-                "PlayerDeathHandler: задайте spawnAnchor или включите rememberStartPoseWhenNoAnchor — телепорт пропущен.",
+                "PlayerDeathHandler: set spawnAnchor or enable rememberStartPoseWhenNoAnchor — teleport skipped.",
                 this);
             return;
         }

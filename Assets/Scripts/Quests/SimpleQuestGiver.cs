@@ -17,6 +17,7 @@ namespace Platformer {
 
         [Header("Overhead Text")]
         [SerializeField] private bool createOverheadText = true;
+        [SerializeField] private bool showOverheadOnlyInRange = true;
         [SerializeField] private string overheadText = "Take a quest";
         [SerializeField] private Vector3 overheadOffset = new Vector3(0f, 2.3f, 0f);
         [SerializeField] private Color overheadColor = Color.white;
@@ -31,7 +32,10 @@ namespace Platformer {
 
         [Header("Quest Chain")]
         [SerializeField] private string questIdPrefix = "main_shadowsteam";
-        [SerializeField] private string fieldEnemyKillId = "field_enemy";
+        [SerializeField, HideInInspector] private string fieldEnemyKillId = "field_enemy";
+        [Tooltip("Drag exact enemy GameObjects from the scene here. If filled, only these enemies count for the field kill quest.")]
+        [SerializeField] private List<GameObject> fieldEnemyObjects = new();
+        [Tooltip("Optional fallback amount used only when Field Enemy Objects is empty.")]
         [SerializeField] private int requiredEnemyKills;
         [Tooltip("Drag pickup GameObjects from the scene here. The quest will wait for these exact objects.")]
         [SerializeField] private List<GameObject> collectItemObjects = new();
@@ -43,8 +47,12 @@ namespace Platformer {
         [SerializeField] private string portalLocationId = "boss_portal";
         [Tooltip("Drag GameObjects with TeleportTrigger here. The quest counts when that TeleportTrigger starts teleporting the player.")]
         [SerializeField] private List<GameObject> portalTeleportTriggerObjects = new();
-        [SerializeField] private string bossKillId = "boss";
+        [SerializeField, HideInInspector] private string bossKillId = "boss";
+        [Tooltip("Drag exact boss/enemy GameObjects here. If filled, all listed enemies must be defeated for the boss quest.")]
+        [SerializeField] private List<GameObject> bossEnemyObjects = new();
         [SerializeField] private int rewardXpPerStep = 50;
+        [Tooltip("Skill id for the intro 'try the fireball' quest. Must match the SkillManager skill id cast by key 1.")]
+        [SerializeField] private string fireballSkillId = "Fireball";
 
         [Header("Scene Auto Setup")]
         [SerializeField] private bool createQuestManagerIfMissing = true;
@@ -67,6 +75,7 @@ namespace Platformer {
         GUIStyle promptTitleStyle;
         GUIStyle promptBodyStyle;
 
+        string FireballQuestId => $"{questIdPrefix}_00_try_fireball";
         string KillQuestId => $"{questIdPrefix}_01_clear_field";
         string CollectQuestId => $"{questIdPrefix}_02_collect_supplies";
         string BreakQuestId => $"{questIdPrefix}_03_break_boulder";
@@ -134,7 +143,7 @@ namespace Platformer {
             if (questManager == null)
                 return;
 
-            if (questManager.TryAcceptMainQuestFromNpc(KillQuestId)) {
+            if (questManager.TryAcceptMainQuestFromNpc(FireballQuestId)) {
                 speechLine = acceptLine;
                 speechUntil = Time.time + speechSeconds;
                 UpdateOverheadTextVisibility();
@@ -163,10 +172,16 @@ namespace Platformer {
                 return;
 
             SetupCollectItemMarkers();
+            SetupEnemyMarkersFromList(fieldEnemyObjects, fieldEnemyKillId);
+            SetupEnemyMarkersFromList(bossEnemyObjects, bossKillId);
             SetupBreakableMarkersFromList();
             SetupPortalTeleportMarkersFromList();
 
-            int kills = ResolveRequiredEnemyKills();
+            questManager.RegisterQuestDefinition(CreateQuest(FireballQuestId, "Try the Fireball",
+                "Cast your fireball spell. Press 1 to launch it.",
+                new QuestObjective[] { CreateCastAbilityObjective(fireballSkillId) }, KillQuestId));
+
+            int kills = ResolveRequiredFieldEnemyKills();
             questManager.RegisterQuestDefinition(CreateQuest(KillQuestId, "Clear the Field",
                 "Defeat the enemies guarding the field.",
                 new QuestObjective[] { CreateKillObjective(fieldEnemyKillId, kills) }, CollectQuestId));
@@ -185,7 +200,7 @@ namespace Platformer {
 
             questManager.RegisterQuestDefinition(CreateQuest(BossQuestId, "Defeat the Boss",
                 "Find the boss and defeat it.",
-                new QuestObjective[] { CreateKillObjective(bossKillId, 1) }, string.Empty));
+                new QuestObjective[] { CreateKillObjective(bossKillId, ResolveRequiredBossKills()) }, string.Empty));
 
             chainRegistered = true;
         }
@@ -246,6 +261,26 @@ namespace Platformer {
                     GetCollectItemDisplayName(itemObject),
                     questManager);
             }
+        }
+
+        void SetupEnemyMarkersFromList(List<GameObject> enemyObjects, string killId) {
+            if (enemyObjects == null)
+                return;
+
+            for (int i = 0; i < enemyObjects.Count; i++)
+                SetupEnemyMarker(enemyObjects[i], killId);
+        }
+
+        void SetupEnemyMarker(GameObject enemyObject, string killId) {
+            GameObject targetObject = ResolveKillTargetObject(enemyObject, true);
+            if (targetObject == null)
+                return;
+
+            QuestKillTarget marker = targetObject.GetComponent<QuestKillTarget>();
+            if (marker == null)
+                marker = targetObject.AddComponent<QuestKillTarget>();
+
+            marker.Configure(killId, questManager);
         }
 
         void SetupBreakableMarkersFromList() {
@@ -327,6 +362,49 @@ namespace Platformer {
             return new string(chars).Trim('_');
         }
 
+        static GameObject ResolveKillTargetObject(GameObject enemyObject, bool warnIfMissingDeathSource) {
+            if (enemyObject == null)
+                return null;
+
+            if (HasDeathSource(enemyObject))
+                return enemyObject;
+
+            StatComponent stats = enemyObject.GetComponentInParent<StatComponent>() ??
+                                  enemyObject.GetComponentInChildren<StatComponent>();
+            if (stats != null)
+                return stats.gameObject;
+
+            Health health = enemyObject.GetComponentInParent<Health>() ??
+                            enemyObject.GetComponentInChildren<Health>();
+            if (health != null)
+                return health.gameObject;
+
+            Enemy enemy = enemyObject.GetComponent<Enemy>() ??
+                          enemyObject.GetComponentInParent<Enemy>() ??
+                          enemyObject.GetComponentInChildren<Enemy>();
+            if (enemy != null && HasDeathSource(enemy.gameObject))
+                return enemy.gameObject;
+
+            if (warnIfMissingDeathSource) {
+                Debug.LogWarning(
+                    $"Quest enemy object '{enemyObject.name}' does not have Health or StatComponent on itself, parent, or child.",
+                    enemyObject);
+            }
+
+            return null;
+        }
+
+        static bool HasDeathSource(GameObject candidate) =>
+            candidate.GetComponent<Health>() != null ||
+            candidate.GetComponent<StatComponent>() != null;
+
+        static CastAbilityObjective CreateCastAbilityObjective(string abilityId) {
+            CastAbilityObjective objective = ScriptableObject.CreateInstance<CastAbilityObjective>();
+            objective.hideFlags = HideFlags.DontSave;
+            objective.Configure(abilityId);
+            return objective;
+        }
+
         static KillObjective CreateKillObjective(string killId, int amount) {
             KillObjective objective = ScriptableObject.CreateInstance<KillObjective>();
             objective.hideFlags = HideFlags.DontSave;
@@ -355,7 +433,11 @@ namespace Platformer {
             return objective;
         }
 
-        int ResolveRequiredEnemyKills() {
+        int ResolveRequiredFieldEnemyKills() {
+            int listedEnemyCount = CountKillTargetsInList(fieldEnemyObjects);
+            if (listedEnemyCount > 0)
+                return listedEnemyCount;
+
             if (requiredEnemyKills > 0)
                 return requiredEnemyKills;
 
@@ -363,18 +445,45 @@ namespace Platformer {
             return Mathf.Max(1, enemies.Length);
         }
 
+        int ResolveRequiredBossKills() {
+            int listedBossCount = CountKillTargetsInList(bossEnemyObjects);
+            return listedBossCount > 0 ? listedBossCount : 1;
+        }
+
+        static int CountKillTargetsInList(List<GameObject> enemyObjects) {
+            if (enemyObjects == null)
+                return 0;
+
+            var uniqueTargets = new HashSet<GameObject>();
+            for (int i = 0; i < enemyObjects.Count; i++) {
+                GameObject targetObject = ResolveKillTargetObject(enemyObjects[i], false);
+                if (targetObject != null)
+                    uniqueTargets.Add(targetObject);
+            }
+
+            return uniqueTargets.Count;
+        }
+
+        static bool HasConfiguredObjects(List<GameObject> objects) {
+            if (objects == null)
+                return false;
+
+            for (int i = 0; i < objects.Count; i++) {
+                if (objects[i] != null)
+                    return true;
+            }
+
+            return false;
+        }
+
         void AutoSetupSceneHooks() {
             if (questManager == null)
                 return;
 
-            if (autoMarkCurrentSceneEnemies) {
+            if (autoMarkCurrentSceneEnemies && !HasConfiguredObjects(fieldEnemyObjects)) {
                 Enemy[] enemies = FindObjectsByType<Enemy>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
                 for (int i = 0; i < enemies.Length; i++) {
-                    QuestKillTarget marker = enemies[i].GetComponent<QuestKillTarget>();
-                    if (marker == null)
-                        marker = enemies[i].gameObject.AddComponent<QuestKillTarget>();
-
-                    marker.Configure(fieldEnemyKillId, questManager);
+                    SetupEnemyMarker(enemies[i].gameObject, fieldEnemyKillId);
                 }
             }
 
@@ -417,11 +526,13 @@ namespace Platformer {
             if (questManager == null)
                 return false;
 
-            return questManager.IsQuestActive(KillQuestId) ||
+            return questManager.IsQuestActive(FireballQuestId) ||
+                   questManager.IsQuestActive(KillQuestId) ||
                    questManager.IsQuestActive(CollectQuestId) ||
                    questManager.IsQuestActive(BreakQuestId) ||
                    questManager.IsQuestActive(PortalQuestId) ||
                    questManager.IsQuestActive(BossQuestId) ||
+                   questManager.IsQuestCompleted(FireballQuestId) ||
                    questManager.IsQuestCompleted(KillQuestId) ||
                    questManager.IsQuestCompleted(CollectQuestId) ||
                    questManager.IsQuestCompleted(BreakQuestId) ||
@@ -459,11 +570,19 @@ namespace Platformer {
 
             QuestBillboard billboard = overheadTextObject.AddComponent<QuestBillboard>();
             billboard.Configure(overheadOffset);
+
+            UpdateOverheadTextVisibility();
         }
 
         void UpdateOverheadTextVisibility() {
-            if (overheadTextObject != null)
-                overheadTextObject.SetActive(!HasAnyChainProgress());
+            if (overheadTextObject == null)
+                return;
+
+            bool visible = !HasAnyChainProgress();
+            if (showOverheadOnlyInRange)
+                visible &= playerInRange;
+
+            overheadTextObject.SetActive(visible);
         }
 
         void RefreshPlayerRange() {

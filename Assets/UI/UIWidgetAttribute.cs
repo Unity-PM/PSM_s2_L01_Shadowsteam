@@ -5,8 +5,8 @@ using UnityEngine;
 [AttributeUsage(AttributeTargets.Class)]
 public class UIWidgetAttribute : Attribute
 {
-    public string TypeId { get; }
-    public UIWidgetAttribute(string typeId) => TypeId = typeId;
+    public string WidgetTypeId { get; }
+    public UIWidgetAttribute(string typeId) => WidgetTypeId = typeId;
 }
 
 [Serializable]
@@ -17,5 +17,5 @@ public class WidgetConfig
     public string ussClass;
     public string value;
     public string colorHex = "#FFFFFF";
-    public List<WidgetConfig> children; // nested widgets — null = leaf node
+    [SerializeReference] public List<WidgetConfig> children; // nested widgets - null = leaf node
 }

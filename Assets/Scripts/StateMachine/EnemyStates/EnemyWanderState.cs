@@ -25,6 +25,11 @@ namespace Platformer {
             lastPosition = enemy.transform.position;
             ResetLocomotionTracking();
 
+            if (!EnemyLocomotion.RecoverToNavMesh(agent, startPoint, 4f)) {
+                SafeForcePlay(IdleId);
+                return;
+            }
+
             agent.isStopped = false;
             agent.updateRotation = true;
             agent.stoppingDistance = 0.35f;
@@ -37,6 +42,11 @@ namespace Platformer {
         public override void Update() {
             if (agent == null)
                 return;
+
+            if (!EnemyLocomotion.RecoverToNavMesh(agent, startPoint, 4f)) {
+                SafePlay(IdleId);
+                return;
+            }
 
             if (EnemyLocomotion.UpdateStuckTimer(agent, ref stuckTimer, ref lastPosition, enemy.StuckResetSeconds)
                 || EnemyLocomotion.HasReachedDestination(agent)) {
@@ -55,7 +65,7 @@ namespace Platformer {
             }
 
             if (!EnemyLocomotion.TrySetDestination(agent, destination))
-                agent.Warp(enemy.transform.position);
+                SafePlay(IdleId);
         }
     }
 }

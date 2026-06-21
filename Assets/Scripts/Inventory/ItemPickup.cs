@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Platformer;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ItemPickup : MonoBehaviour
 {
@@ -16,6 +17,10 @@ public class ItemPickup : MonoBehaviour
     public string itemIdOverride;
     [TextArea] public string descriptionOverride;
     public ItemType directItemType = ItemType.Quest;
+
+    [Header("Persistence")]
+    [Tooltip("Stable id for this exact world pickup. Empty uses scene path + hierarchy path + item id.")]
+    [SerializeField] private string persistentPickupId;
 
     [Header("Idle Animation")]
     [SerializeField] private bool floatAnimation = true;
@@ -33,12 +38,29 @@ public class ItemPickup : MonoBehaviour
     float floatPhase;
 
     public ItemSO CurrentItemData => ResolveItemData();
+    public string PersistentPickupId => ResolvePersistentPickupId();
 
     void Awake()
     {
+        if (GameSession.IsWorldItemPicked(ResolvePersistentPickupId()))
+        {
+            gameObject.SetActive(false);
+            Destroy(gameObject);
+            return;
+        }
+
         StabilizePickupPhysics();
         floatStartLocalPosition = transform.localPosition;
         floatPhase = randomizeFloatPhase ? Mathf.Abs(GetInstanceID() % 1000) * 0.01f : 0f;
+    }
+
+    void Start()
+    {
+        if (GameSession.IsWorldItemPicked(ResolvePersistentPickupId()))
+        {
+            gameObject.SetActive(false);
+            Destroy(gameObject);
+        }
     }
 
     void Update()
@@ -69,6 +91,13 @@ public class ItemPickup : MonoBehaviour
         QuestManager questManager = FindFirstObjectByType<QuestManager>();
         if (questManager != null && !string.IsNullOrEmpty(pickedItem.itemId))
             questManager.NotifyItemCollected(pickedItem.itemId);
+
+        string pickupId = ResolvePersistentPickupId();
+        if (!string.IsNullOrEmpty(pickupId))
+        {
+            GameSession.MarkWorldItemPicked(pickupId);
+            GameSaveCoordinator.Instance?.RegisterPickedWorldItem(pickupId);
+        }
 
         Destroy(gameObject);
     }
@@ -235,5 +264,36 @@ public class ItemPickup : MonoBehaviour
             return itemIconPng.name;
 
         return null;
+    }
+
+    string ResolvePersistentPickupId()
+    {
+        if (!string.IsNullOrWhiteSpace(persistentPickupId))
+            return persistentPickupId.Trim();
+
+        Scene scene = gameObject.scene;
+        string scenePart = !string.IsNullOrEmpty(scene.path) ? scene.path : scene.name;
+        string itemPart = ResolveItemData()?.itemId;
+        if (string.IsNullOrWhiteSpace(itemPart))
+            itemPart = string.IsNullOrWhiteSpace(itemIdOverride) ? name : itemIdOverride.Trim();
+
+        return $"{scenePart}:{GetHierarchyPath(transform)}:{itemPart}";
+    }
+
+    static string GetHierarchyPath(Transform target)
+    {
+        if (target == null)
+            return string.Empty;
+
+        var parts = new List<string>();
+        Transform current = target;
+        while (current != null)
+        {
+            parts.Add($"{current.name}[{current.GetSiblingIndex()}]");
+            current = current.parent;
+        }
+
+        parts.Reverse();
+        return string.Join("/", parts);
     }
 }

@@ -49,7 +49,20 @@ public class EquipmentComponent : MonoBehaviour
         if (!equippedItems.TryGetValue(slot, out var current) || current == null) return;
         RemoveModifiers(current);
         equippedItems.Remove(slot);
+        Debug.Log($"[Equipment] unequipped: {current.itemName} from slot {slot}");
         EventBus.Publish(new EquipmentChangedEvent(this));
+    }
+
+    public EquipmentSO GetEquipped(EquipmentSlotType slot)
+    {
+        return equippedItems.TryGetValue(slot, out var current) ? current : null;
+    }
+
+    public bool IsEquipped(EquipmentSO equipment)
+    {
+        return equipment != null
+            && equippedItems.TryGetValue(equipment.slotType, out var current)
+            && current == equipment;
     }
 
     private void ApplyModifiers(EquipmentSO equipment)

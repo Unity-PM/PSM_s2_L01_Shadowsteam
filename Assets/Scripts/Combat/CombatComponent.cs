@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 #endif
 
 /// <summary>
-/// Ближняя атака: ищет коллайдеры с <see cref="Enemy"/> в сфере перед персонажем и наносит урон через <see cref="StatChangeEvent"/>.
+/// Melee attack: finds colliders with <see cref="Enemy"/> in a sphere in front of the character and deals damage via <see cref="StatChangeEvent"/>.
 /// </summary>
 public class CombatComponent : MonoBehaviour {
     [Header("Damage")]
@@ -23,7 +23,7 @@ public class CombatComponent : MonoBehaviour {
     [SerializeField] string attackAnimationStateId = "Attack";
 
 #if ENABLE_INPUT_SYSTEM
-    [Header("Optional: тот же Input Action, что удара в DynamicAnimator")]
+    [Header("Optional: same Input Action as the attack in DynamicAnimator")]
     [SerializeField] InputActionReference meleeAttackAction;
 #endif
 
@@ -73,7 +73,7 @@ public class CombatComponent : MonoBehaviour {
             cooldownTimer -= Time.deltaTime;
     }
 
-    /// <summary>Можно повесить как Animation Event «Attack» или оставить только привязку ввода выше.</summary>
+    /// <summary>Can be wired as an "Attack" Animation Event, or rely only on the input binding above.</summary>
     public void Attack() {
         if (cooldownTimer > 0f || attackerStats == null)
             return;

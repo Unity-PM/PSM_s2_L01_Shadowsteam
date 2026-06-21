@@ -7,7 +7,7 @@ public static class GameSaveService
     public const int CurrentSaveVersion = 1;
     const string FileName = "save.json";
 
-    static string SavePath => Path.Combine(Application.persistentDataPath, FileName);
+    static string SavePath => GameSavePathProvider.GetSavePath(FileName);
 
     public static bool HasSave() => File.Exists(SavePath);
 
@@ -37,6 +37,12 @@ public static class GameSaveService
 
             if (data.equippedItems == null)
                 data.equippedItems = Array.Empty<EquippedItemEntry>();
+
+            if (data.inventoryItems == null)
+                data.inventoryItems = Array.Empty<InventoryItemSaveEntry>();
+
+            if (data.pickedWorldItemIds == null)
+                data.pickedWorldItemIds = Array.Empty<string>();
 
             if (data.playerStats.statModifiers == null)
                 data.playerStats.statModifiers = Array.Empty<StatModifierEntry>();

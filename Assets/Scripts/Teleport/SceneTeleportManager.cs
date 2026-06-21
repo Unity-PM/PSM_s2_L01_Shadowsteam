@@ -30,6 +30,11 @@ public class SceneTeleportManager : MonoBehaviour
         }
 
         instance = this;
+
+        // DontDestroyOnLoad only works on root objects; detach if nested.
+        if (transform.parent != null)
+            transform.SetParent(null);
+
         DontDestroyOnLoad(gameObject);
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
@@ -230,9 +235,19 @@ public class SceneTeleportManager : MonoBehaviour
             return;
 
         GameObject instanceObject = Instantiate(vfxPrefab, position, rotation);
-        instanceObject.SetActive(true);
+        instanceObject.SetActive(false);
 
         ParticleSystem[] particleSystems = instanceObject.GetComponentsInChildren<ParticleSystem>(true);
+        for (int i = 0; i < particleSystems.Length; i++)
+        {
+            ParticleSystem.MainModule main = particleSystems[i].main;
+            main.loop = false;
+            main.playOnAwake = false;
+            particleSystems[i].Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        instanceObject.SetActive(true);
+
         for (int i = 0; i < particleSystems.Length; i++)
             particleSystems[i].Play(true);
 

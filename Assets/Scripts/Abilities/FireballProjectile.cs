@@ -231,10 +231,11 @@ public class FireballProjectile : MonoBehaviour
         if (targetStats == null || targetStats == caster || targetStats.IsDead)
             return false;
 
+        float finalDamage = Mathf.Max(0f, damage - Mathf.Max(0f, targetStats.GetEffectiveStat(StatType.MDEF)));
         EventBus.Publish(new StatChangeEvent(
             targetStats,
             StatType.HP,
-            -damage
+            -finalDamage
         ));
 
         return true;

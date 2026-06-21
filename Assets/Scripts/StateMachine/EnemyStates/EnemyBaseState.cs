@@ -38,6 +38,10 @@ namespace Platformer {
         protected void SyncLocomotion(NavMeshAgent agent, bool forceRun = false) {
             if (agent == null || clipAnimator == null || clipAnimator.IsMovementLocked)
                 return;
+            if (!EnemyLocomotion.IsReadyForNavigation(agent)) {
+                SafePlay(IdleId);
+                return;
+            }
 
             Vector3 velocity = agent.velocity;
             velocity.y = 0f;

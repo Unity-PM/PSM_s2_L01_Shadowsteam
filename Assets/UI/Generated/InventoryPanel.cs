@@ -30,6 +30,8 @@ public class InventoryPanel : MonoBehaviour
 	{
 		StatType.CritChance,
 		StatType.CritDamage,
+		StatType.MS,
+		StatType.AS,
 		StatType.DodgeChance,
 		StatType.BlockChance,
 		StatType.CooldownReduction
@@ -46,6 +48,7 @@ public class InventoryPanel : MonoBehaviour
 	{
 		UnbindButtons();
 		EventBus.Subscribe<InventoryUpdatedEvent>(OnInventoryUpdated);
+		EventBus.Subscribe<EquipmentChangedEvent>(OnEquipmentChanged);
 
 		root = uiDocument != null ? uiDocument.rootVisualElement : null;
 		if (root == null)
@@ -61,6 +64,7 @@ public class InventoryPanel : MonoBehaviour
 	void OnDisable()
 	{
 		EventBus.Unsubscribe<InventoryUpdatedEvent>(OnInventoryUpdated);
+		EventBus.Unsubscribe<EquipmentChangedEvent>(OnEquipmentChanged);
 		UnbindButtons();
 	}
 	#endregion
@@ -159,6 +163,18 @@ public class InventoryPanel : MonoBehaviour
 		if (isActiveAndEnabled)
 			Refresh();
 	}
+
+	void OnEquipmentChanged(EquipmentChangedEvent e)
+	{
+		if (equipment == null)
+			ResolvePlayerComponents();
+
+		if (equipment != null && e.equipment != equipment)
+			return;
+
+		if (isActiveAndEnabled)
+			Refresh();
+	}
 	#endregion
 
 	#region Handlers
@@ -187,7 +203,12 @@ public class InventoryPanel : MonoBehaviour
 			return;
 		}
 
-		equipment.Equip(gear);
+		if (equipment.IsEquipped(gear))
+			equipment.Unequip(gear.slotType);
+		else
+			equipment.Equip(gear);
+
+		Refresh();
 	}
 
 	private void OnUseBtnClicked()
@@ -300,8 +321,11 @@ public class InventoryPanel : MonoBehaviour
 
 		foreach (VisualElement child in itemGridScroll.contentContainer.Children())
 		{
-			bool selected = child.userData as ItemSO == selectedItem;
+			ItemSO item = child.userData as ItemSO;
+			bool selected = item == selectedItem;
+			bool equipped = item is EquipmentSO gear && equipment != null && equipment.IsEquipped(gear);
 			child.EnableInClassList("item-slot--selected", selected);
+			child.EnableInClassList("item-slot--equipped", equipped);
 		}
 	}
 
@@ -404,7 +428,11 @@ public class InventoryPanel : MonoBehaviour
 			&& item.useAmount != 0f;
 
 		if (equipBtn != null)
+		{
 			equipBtn.style.display = showEquip ? DisplayStyle.Flex : DisplayStyle.None;
+			if (item is EquipmentSO gear)
+				equipBtn.text = equipment != null && equipment.IsEquipped(gear) ? "Unequip" : "Equip";
+		}
 
 		if (useBtn != null)
 			useBtn.style.display = showUse ? DisplayStyle.Flex : DisplayStyle.None;

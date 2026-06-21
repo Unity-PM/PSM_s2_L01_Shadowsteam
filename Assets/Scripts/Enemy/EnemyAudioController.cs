@@ -208,7 +208,7 @@ public class EnemyAudioController : MonoBehaviour {
         isRunning = false;
         speed = 0f;
 
-        if (agent != null) {
+        if (EnemyLocomotion.IsReadyForNavigation(agent)) {
             Vector3 velocity = agent.velocity;
             velocity.y = 0f;
             speed = velocity.magnitude;

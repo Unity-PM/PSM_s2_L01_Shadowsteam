@@ -51,7 +51,7 @@ namespace Scene_Teleportation_Kit.Scripts.teleport
         }
 
         private SpawnPoint FindSpawnPoint(string spawnName) {
-            SpawnPoint[] spawnPoints = FindObjectsOfType<SpawnPoint>();
+            SpawnPoint[] spawnPoints = FindObjectsByType<SpawnPoint>(FindObjectsSortMode.None);
             foreach (SpawnPoint spawn in spawnPoints) {
                 SpawnPoint spawnPoint = spawn.GetComponent<SpawnPoint>();
                 if (spawnPoint.spawnName == spawnName) {

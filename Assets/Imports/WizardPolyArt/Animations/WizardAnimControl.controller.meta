@@ -8,8 +8,8 @@ NativeFormatImporter:
   assetBundleVariant: 
 AssetOrigin:
   serializedVersion: 1
-  productId: 128097
-  packageName: Battle Wizard Poly Art
+  productId: 127652
+  packageName: Battle Wizard PBR
   packageVersion: 1.2
-  assetPath: Assets/WizardPolyArt/Animations/WizardAnimControl.controller
-  uploadId: 422634
+  assetPath: Assets/Imports/WizardPolyArt/Animations/WizardAnimControl.controller
+  uploadId: 459288

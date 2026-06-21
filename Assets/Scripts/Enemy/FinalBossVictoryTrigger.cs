@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Platformer;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,7 +13,7 @@ using UnityEditor;
 public class FinalBossVictoryTrigger : MonoBehaviour
 {
     [Header("Victory Screen")]
-    [SerializeField] private string victoryMessage = "Ты победил";
+    [SerializeField] private string victoryMessage = "You Win";
     [SerializeField, Min(0f)] private float exitDelay = 2.5f;
     [SerializeField] private Color backgroundColor = new Color(0f, 0f, 0f, 0.9f);
     [SerializeField] private Color textColor = Color.white;
@@ -21,6 +22,11 @@ public class FinalBossVictoryTrigger : MonoBehaviour
     [Header("Exit")]
     [SerializeField] private bool pauseGameOnVictory = true;
     [SerializeField] private string errorMessage = "You have beaten this god damn game, now you can forget it forever";
+
+    [Header("Quest")]
+    [SerializeField] private bool notifyQuestOnDeath = true;
+    [SerializeField] private string questKillId = "boss";
+    [SerializeField] private QuestManager questManager;
 
     private StatComponent stats;
     private bool triggered;
@@ -46,6 +52,7 @@ public class FinalBossVictoryTrigger : MonoBehaviour
             return;
 
         triggered = true;
+        NotifyQuestKilled();
         ShowVictoryScreen();
 
         if (pauseGameOnVictory)
@@ -118,6 +125,18 @@ public class FinalBossVictoryTrigger : MonoBehaviour
 #endif
 
         throw new InvalidOperationException(errorMessage);
+    }
+
+    private void NotifyQuestKilled()
+    {
+        if (!notifyQuestOnDeath || string.IsNullOrEmpty(questKillId))
+            return;
+
+        if (questManager == null)
+            questManager = FindFirstObjectByType<QuestManager>();
+
+        if (questManager != null)
+            questManager.NotifyEnemyKilledWithTag(questKillId);
     }
 
     private static void StretchToParent(RectTransform rectTransform)

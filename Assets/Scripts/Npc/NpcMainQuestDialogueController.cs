@@ -7,7 +7,7 @@ using UnityEngine.InputSystem;
 
 namespace Platformer {
     /// <summary>
-    /// Диалог с NPC и выдача только main-квеста; UI подключается через UnityEvents и кнопки (Accept / Next / Close).
+    /// NPC dialogue that offers only the main quest; UI is wired via UnityEvents and buttons (Accept / Next / Close).
     /// </summary>
     public class NpcMainQuestDialogueController : MonoBehaviour {
         [Header("References")]
@@ -15,14 +15,14 @@ namespace Platformer {
         [SerializeField] private QuestManager questManager;
         [SerializeField] private NpcDialogueData dialogueData;
         [SerializeField] private string offeredMainQuestId;
-        [Tooltip("Передаётся в QuestManager при открытии диалога (TalkObjective), если не пусто.")]
+        [Tooltip("Passed to QuestManager when the dialogue opens (TalkObjective), if not empty.")]
         [SerializeField] private string npcIdForTalkObjective;
         [SerializeField] private InputActionReference interactAction;
         [SerializeField] private bool useKeyboardEIfNoAction = true;
 
         [Header("Blocked by other main quest")]
         [SerializeField] private string blockedByOtherMainMessage =
-            "Сначала завершите текущий сюжетный квест.";
+            "Finish your current story quest first.";
 
         [Header("Talk objective")]
         [SerializeField] private bool notifyTalkObjectiveWhenDialogueOpens = true;
@@ -74,7 +74,7 @@ namespace Platformer {
             return false;
         }
 
-        /// <summary>Кнопка «начать диалог» / первое нажатие E уже обрабатывается в Update; можно вызывать с UI.</summary>
+        /// <summary>"Start dialogue" button / the first E press is already handled in Update; can be called from UI.</summary>
         public void TryOpenDialogue() {
             if (questManager == null || dialogueData == null || dialogueOpen || interactionZone == null ||
                 !interactionZone.PlayerInRange)
@@ -126,7 +126,7 @@ namespace Platformer {
             }
         }
 
-        /// <summary>Следующая страница; с кнопки UI или повторное E пока диалог открыт.</summary>
+        /// <summary>Next page; from a UI button or a repeated E press while the dialogue is open.</summary>
         public void ShowNextPage() {
             if (!dialogueOpen)
                 return;
@@ -151,7 +151,7 @@ namespace Platformer {
             onDialogueLineChanged?.Invoke(string.Empty);
         }
 
-        /// <summary>Кнопка «Принять квест» — только main, один активный сюжетный.</summary>
+        /// <summary>"Accept quest" button — main only, a single active story quest.</summary>
         public void AcceptQuest() {
             if (questManager == null || string.IsNullOrEmpty(offeredMainQuestId))
                 return;

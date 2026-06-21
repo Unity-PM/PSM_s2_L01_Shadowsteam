@@ -23,6 +23,9 @@ public class GameSaveCommands : MonoBehaviour
         if (GameSaveCoordinator.Instance != null)
             GameSaveCoordinator.Instance.DeleteSave();
         else
+        {
             GameSaveService.DeleteSave();
+            Platformer.QuestProgressCommands.DeleteSave();
+        }
     }
 }

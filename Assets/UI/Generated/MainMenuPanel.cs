@@ -22,6 +22,7 @@ public class MainMenuPanel : MonoBehaviour
     private VisualElement root;
 
     private Button playBtn;
+    private Button newGameBtn;
     private Button settingsBtn;
     private Button exitBtn;
 
@@ -96,6 +97,7 @@ public class MainMenuPanel : MonoBehaviour
             return false;
 
         playBtn = root.Q<Button>("play-btn");
+        newGameBtn = root.Q<Button>("new-game-btn");
         settingsBtn = root.Q<Button>("settings-btn");
         exitBtn = root.Q<Button>("exit-btn");
 
@@ -104,7 +106,7 @@ public class MainMenuPanel : MonoBehaviour
         volumeSlider = root.Q<Slider>("volume-slider");
         volumeValueLabel = root.Q<Label>("volume-value-label");
 
-        if (playBtn == null || settingsBtn == null || exitBtn == null)
+        if (playBtn == null || newGameBtn == null || settingsBtn == null || exitBtn == null)
             return false;
 
         if (stylesheet != null)
@@ -125,6 +127,7 @@ public class MainMenuPanel : MonoBehaviour
             return;
 
         playBtn.clicked += OnPlayClicked;
+        newGameBtn.clicked += OnNewGameClicked;
         settingsBtn.clicked += OnSettingsClicked;
         exitBtn.clicked += OnExitClicked;
 
@@ -145,6 +148,9 @@ public class MainMenuPanel : MonoBehaviour
         if (playBtn != null)
             playBtn.clicked -= OnPlayClicked;
 
+        if (newGameBtn != null)
+            newGameBtn.clicked -= OnNewGameClicked;
+
         if (settingsBtn != null)
             settingsBtn.clicked -= OnSettingsClicked;
 
@@ -162,6 +168,19 @@ public class MainMenuPanel : MonoBehaviour
 
     private void OnPlayClicked()
     {
+        GameSaveCoordinator coordinator = GameSaveCoordinator.EnsureInstance();
+        if (GameSaveService.HasSave())
+            coordinator.LoadGame();
+        else
+        {
+            coordinator.DeleteSave();
+            SceneManager.LoadScene(gameSceneName);
+        }
+    }
+
+    private void OnNewGameClicked()
+    {
+        GameSaveCoordinator.EnsureInstance().DeleteSave();
         SceneManager.LoadScene(gameSceneName);
     }
 

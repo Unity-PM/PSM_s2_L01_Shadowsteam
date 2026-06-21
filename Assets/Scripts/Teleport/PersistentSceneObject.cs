@@ -24,6 +24,10 @@ public class PersistentSceneObject : MonoBehaviour
             ActiveIds.Add(runtimeId);
         }
 
+        // DontDestroyOnLoad only works on root objects; detach if nested.
+        if (transform.parent != null)
+            transform.SetParent(null);
+
         DontDestroyOnLoad(gameObject);
     }
 

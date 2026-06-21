@@ -56,8 +56,12 @@ namespace Platformer {
             return true;
         }
 
+        public static bool IsReadyForNavigation(NavMeshAgent agent) {
+            return agent != null && agent.enabled && agent.isOnNavMesh;
+        }
+
         public static bool HasReachedDestination(NavMeshAgent agent) {
-            if (agent == null || !agent.isOnNavMesh)
+            if (!IsReadyForNavigation(agent))
                 return true;
 
             if (agent.pathPending)
@@ -73,21 +77,19 @@ namespace Platformer {
         }
 
         public static void StopAgent(NavMeshAgent agent, bool resetPath) {
-            if (agent == null || !agent.enabled)
+            if (!IsReadyForNavigation(agent))
                 return;
 
-            if (agent.isOnNavMesh) {
-                agent.isStopped = true;
-                if (resetPath)
-                    agent.ResetPath();
-            }
+            agent.isStopped = true;
+            if (resetPath)
+                agent.ResetPath();
 
             agent.velocity = Vector3.zero;
             agent.nextPosition = agent.transform.position;
         }
 
         public static bool HasMoveIntent(NavMeshAgent agent, float extraDistance = 0.1f) {
-            if (agent == null || !agent.enabled || agent.isStopped)
+            if (!IsReadyForNavigation(agent) || agent.isStopped)
                 return false;
 
             if (agent.pathPending)
@@ -110,7 +112,7 @@ namespace Platformer {
         }
 
         public static void ClampVelocity(NavMeshAgent agent, float maxPlanarSpeed) {
-            if (agent == null || !agent.enabled || maxPlanarSpeed <= 0f)
+            if (!IsReadyForNavigation(agent) || maxPlanarSpeed <= 0f)
                 return;
 
             Vector3 velocity = agent.velocity;
@@ -143,8 +145,10 @@ namespace Platformer {
         }
 
         public static bool UpdateStuckTimer(NavMeshAgent agent, ref float stuckTimer, ref Vector3 lastPosition, float stuckSeconds) {
-            if (agent == null) {
+            if (!IsReadyForNavigation(agent)) {
                 stuckTimer = 0f;
+                if (agent != null)
+                    lastPosition = agent.transform.position;
                 return false;
             }
 

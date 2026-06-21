@@ -30,6 +30,11 @@ namespace Platformer {
             hasDestination = false;
             ResetLocomotionTracking();
 
+            if (!EnemyLocomotion.RecoverToNavMesh(agent, enemy.transform.position, 4f)) {
+                SafeForcePlay(IdleId);
+                return;
+            }
+
             agent.isStopped = false;
             agent.updateRotation = true;
             agent.speed = enemy.ChaseSpeed;
@@ -43,6 +48,11 @@ namespace Platformer {
         public override void Update() {
             if (agent == null)
                 return;
+
+            if (!EnemyLocomotion.RecoverToNavMesh(agent, enemy.transform.position, 4f)) {
+                SafePlay(IdleId);
+                return;
+            }
 
             repathTimer += Time.deltaTime;
             if (repathTimer >= 0.15f) {
@@ -63,6 +73,8 @@ namespace Platformer {
         void UpdateChaseDestination(bool force = false) {
             Transform player = playerDetector?.Player;
             if (player == null)
+                return;
+            if (!EnemyLocomotion.IsReadyForNavigation(agent))
                 return;
 
             Vector3 destination = playerDetector.GetPlayerLookPosition(enemy.transform.position);

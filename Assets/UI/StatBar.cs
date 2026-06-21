@@ -3,42 +3,40 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 
+[UxmlElement]
 [UIWidget("stat-bar")]
-public class StatBar : VisualElement, IConfigurable
+public partial class StatBar : VisualElement, IConfigurable
 {
-    public new class UxmlFactory : UxmlFactory<StatBar, UxmlTraits> { }
-
-    public new class UxmlTraits : VisualElement.UxmlTraits
-    {
-        UxmlStringAttributeDescription _label =
-            new() { name = "label", defaultValue = "HP" };
-        UxmlColorAttributeDescription _color =
-            new() { name = "fill-color", defaultValue = Color.red };
-
-        public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-        {
-            base.Init(ve, bag, cc);
-            var bar = (StatBar)ve;
-            bar.Label = _label.GetValueFromBag(bag, cc);
-            bar.FillColor = _color.GetValueFromBag(bag, cc);
-        }
-    }
-
     private readonly Label _label;
     private readonly VisualElement _bg;
     private readonly VisualElement _fill;
-    private readonly Label _valueLabel; // ← new
+    private readonly Label _valueLabel;
 
+    private string _labelText = "HP";
+    private Color _fillColor = Color.red;
+
+    [UxmlAttribute("label")]
     public string Label
     {
-        get => _label.text;
-        set => _label.text = value;
+        get => _labelText;
+        set
+        {
+            _labelText = value;
+            if (_label != null)
+                _label.text = value;
+        }
     }
 
+    [UxmlAttribute("fill-color")]
     public Color FillColor
     {
-        get => _fill.resolvedStyle.backgroundColor;
-        set => _fill.style.backgroundColor = value;
+        get => _fillColor;
+        set
+        {
+            _fillColor = value;
+            if (_fill != null)
+                _fill.style.backgroundColor = value;
+        }
     }
 
     public void SetValue(float current, float max)
@@ -46,7 +44,7 @@ public class StatBar : VisualElement, IConfigurable
         float pct = max > 0f ? current / max : 0f;
         _fill.style.width = Length.Percent(Mathf.Clamp01(pct) * 100f);
 
-        // update text — round to int for clean display
+        // update text - round to int for clean display
         _valueLabel.text = $"{Mathf.RoundToInt(current)} / {Mathf.RoundToInt(max)}";
     }
 
@@ -62,7 +60,7 @@ public class StatBar : VisualElement, IConfigurable
         AddToClassList("stat-bar");
 
         // left label (HP / MP / ST)
-        _label = new Label();
+        _label = new Label(_labelText);
         _label.AddToClassList("stat-bar__label");
 
         // background track
@@ -72,8 +70,9 @@ public class StatBar : VisualElement, IConfigurable
         // fill bar
         _fill = new VisualElement();
         _fill.AddToClassList("stat-bar__fill");
+        _fill.style.backgroundColor = _fillColor;
 
-        // value text overlay — sits on top of the bar
+        // value text overlay - sits on top of the bar
         _valueLabel = new Label();
         _valueLabel.AddToClassList("stat-bar__value");
 

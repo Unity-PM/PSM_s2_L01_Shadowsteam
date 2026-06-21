@@ -16,7 +16,8 @@ namespace Platformer {
                 return;
 
             ResetLocomotionTracking();
-            agent.updateRotation = false;
+            if (EnemyLocomotion.IsReadyForNavigation(agent))
+                agent.updateRotation = false;
             EnemyLocomotion.StopAgent(agent, resetPath: true);
             enemy.TryStartAttack();
         }
@@ -51,6 +52,9 @@ namespace Platformer {
             enemy.CancelPendingAttack();
 
             if (agent == null)
+                return;
+
+            if (!EnemyLocomotion.IsReadyForNavigation(agent))
                 return;
 
             agent.updateRotation = true;

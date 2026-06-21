@@ -4,5 +4,5 @@ public abstract class MeleeAbilitySO : AbilitySO
 {
     public float range;
     public float damage;
-    public float arcAngle; // Угол поражения
+    public float arcAngle; // Hit arc angle
 }

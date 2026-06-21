@@ -55,10 +55,12 @@ public class EnemyDeathHandler : MonoBehaviour
 
         if (agent != null && agent.enabled)
         {
-            if (agent.isOnNavMesh)
+            if (EnemyLocomotion.IsReadyForNavigation(agent))
+            {
                 agent.ResetPath();
+                agent.isStopped = true;
+            }
 
-            agent.isStopped = true;
             agent.enabled = false;
         }
 

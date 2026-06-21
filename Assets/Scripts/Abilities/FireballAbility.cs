@@ -4,6 +4,9 @@ using Platformer;
 [CreateAssetMenu(fileName = "FireballAbility", menuName = "Scriptable Objects/Abilities/Fireball")]
 public class FireballAbility : RangedAbilitySO
 {
+    [Header("Scaling")]
+    [SerializeField] float magicStatMultiplier = 1f;
+
     [Header("Targeting")]
     [SerializeField] float targetSearchRadius = 24f;
     [SerializeField] float targetAimHeight = 1f;
@@ -44,7 +47,7 @@ public class FireballAbility : RangedAbilitySO
         {
             proj.Init(
                 caster,
-                damage,
+                CalculateDamage(caster),
                 speed,
                 target,
                 direction.normalized,
@@ -57,6 +60,15 @@ public class FireballAbility : RangedAbilitySO
                 impactSound,
                 impactVolume);
         }
+    }
+
+    float CalculateDamage(StatComponent caster)
+    {
+        float magicBonus = caster != null
+            ? Mathf.Max(0f, caster.GetEffectiveStat(StatType.MAG)) * Mathf.Max(0f, magicStatMultiplier)
+            : 0f;
+
+        return Mathf.Max(0f, damage + magicBonus);
     }
 
     void PlayOneShot(AudioClip clip, Vector3 position, float volume)

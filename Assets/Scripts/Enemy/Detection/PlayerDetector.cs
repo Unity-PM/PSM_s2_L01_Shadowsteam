@@ -71,7 +71,7 @@ namespace Platformer {
             cachedPlayerStats = Player.GetComponent<StatComponent>();
         }
 
-        /// <summary>Игрок мёртв по <see cref="Health"/> или флагу <see cref="StatComponent.IsDead"/>.</summary>
+        /// <summary>Player is dead per <see cref="Health"/> or the <see cref="StatComponent.IsDead"/> flag.</summary>
         public bool IsPlayerDeadForCombat() {
             RefreshPlayerReferences();
 
